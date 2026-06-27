@@ -99,9 +99,9 @@
   .leaflet-popup-content { margin: 14px 16px; }
   .leaflet-popup-close-button { color: #888 !important; font-size: 18px !important; top: 8px !important; right: 10px !important; }
 
-  .popup-day { font-size: 10px; background: #eef5ee; color: #3d6b40; border-radius: 10px; padding: 2px 8px; display: inline-block; margin-bottom: 6px; font-weight: 600; }
-  .popup-name { font-size: 15px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; color: #1a1a1a; }
-  .popup-desc { font-size: 12px; line-height: 1.8; color: #444; white-space: pre-line; }
+  .popup-day { font-size: 12px; background: #eef5ee; color: #3d6b40; border-radius: 10px; padding: 2px 8px; display: inline-block; margin-bottom: 6px; font-weight: 600; }
+  .popup-name { font-size: 16px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; color: #1a1a1a; }
+  .popup-desc { font-size: 13px; line-height: 1.9; color: #444; white-space: pre-line; }
   .popup-photo-placeholder {
     background: #f5f0ea;
     border: 1px dashed #c8bfb0;
@@ -109,7 +109,7 @@
     padding: 10px;
     margin-top: 10px;
     text-align: center;
-    font-size: 11px;
+    font-size: 12px;
     color: #999;
   }
 </style>
@@ -414,68 +414,72 @@ const hotels = [
 // ===== Google Forms 메모 링크 =====
 const MEMO_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeea6cQL4JMlwP_vTR4TXXa-a_Kv4l_hV6TkZAz4nvAytBX_g/viewform?usp=header';
 
-// ===== 슬라이드 함수 =====
-const slideIndex = {};
-function slidePhoto(id, dir, total) {
-  if (slideIndex[id] === undefined) slideIndex[id] = 0;
-  const imgs = document.querySelectorAll(`img[data-gallery="${id}"]`);
-  imgs[slideIndex[id]].style.display = 'none';
-  slideIndex[id] = (slideIndex[id] + dir + total) % total;
-  imgs[slideIndex[id]].style.display = 'block';
-  const counter = document.getElementById(`${id}_counter`);
-  if (counter) counter.textContent = `${slideIndex[id]+1} / ${total}`;
-}
-
 // ===== 라이트박스 =====
-function openLightbox(id, index) {
-  const imgs = document.querySelectorAll(`img[data-gallery="${id}"]`);
-  const srcs = Array.from(imgs).map(img => img.src);
-  let current = index;
+function openLightbox(srcs, startIndex) {
+  let current = startIndex;
+  const total = srcs.length;
 
   const overlay = document.createElement('div');
   overlay.style.cssText = `
     position:fixed; top:0; left:0; width:100%; height:100%;
-    background:rgba(0,0,0,0.92); z-index:99999;
+    background:rgba(0,0,0,0.93); z-index:99999;
     display:flex; align-items:center; justify-content:center;
-    flex-direction:column;
+    flex-direction:column; touch-action:none;
   `;
 
   const render = () => {
     overlay.innerHTML = `
-      <div style="position:relative; max-width:95vw; max-height:85vh;">
+      <div style="position:relative; max-width:96vw; max-height:82vh; display:flex; align-items:center; justify-content:center;">
         <img src="${srcs[current]}" style="
-          max-width:95vw; max-height:80vh;
-          object-fit:contain; border-radius:8px;"/>
-        <div style="
-          position:absolute; top:50%; transform:translateY(-50%);
-          width:100%; display:flex; justify-content:space-between;
-          padding:0 8px; box-sizing:border-box; pointer-events:none;">
-          ${srcs.length > 1 ? `
-          <button onclick="event.stopPropagation(); lbSlide(-1)" style="
-            pointer-events:all;
-            background:rgba(255,255,255,0.25); color:white; border:none;
-            border-radius:50%; width:40px; height:40px;
-            font-size:18px; cursor:pointer;">◀</button>
-          <button onclick="event.stopPropagation(); lbSlide(1)" style="
-            pointer-events:all;
-            background:rgba(255,255,255,0.25); color:white; border:none;
-            border-radius:50%; width:40px; height:40px;
-            font-size:18px; cursor:pointer;">▶</button>
-          ` : '<span></span><span></span>'}
-        </div>
+          max-width:96vw; max-height:78vh;
+          object-fit:contain; border-radius:10px;
+          box-shadow:0 4px 24px rgba(0,0,0,0.5);"/>
+
+        ${total > 1 ? `
+        <button onclick="event.stopPropagation(); lbMove(-1)" style="
+          position:absolute; left:-16px; top:50%; transform:translateY(-50%);
+          background:rgba(255,255,255,0.2); color:white; border:none;
+          border-radius:50%; width:44px; height:44px;
+          font-size:20px; cursor:pointer; backdrop-filter:blur(4px);">◀</button>
+        <button onclick="event.stopPropagation(); lbMove(1)" style="
+          position:absolute; right:-16px; top:50%; transform:translateY(-50%);
+          background:rgba(255,255,255,0.2); color:white; border:none;
+          border-radius:50%; width:44px; height:44px;
+          font-size:20px; cursor:pointer; backdrop-filter:blur(4px);">▶</button>
+        ` : ''}
       </div>
-      <div style="color:white; margin-top:12px; font-size:13px;">
-        ${current+1} / ${srcs.length} &nbsp;|&nbsp; 탭하면 닫힘
+
+      <!-- 하단 정보 -->
+      <div style="margin-top:14px; display:flex; align-items:center; gap:16px;">
+        <span style="color:rgba(255,255,255,0.7); font-size:13px;">${current+1} / ${total}</span>
+        <button onclick="document.body.removeChild(document.getElementById('lb_overlay'))" style="
+          background:rgba(255,255,255,0.15); color:white; border:none;
+          border-radius:20px; padding:6px 16px; cursor:pointer; font-size:12px;">✕ 닫기</button>
       </div>
+
+      <!-- 썸네일 바 -->
+      ${total > 1 ? `
+      <div style="display:flex; gap:6px; margin-top:10px; overflow-x:auto; max-width:96vw; padding:4px;">
+        ${srcs.map((src, i) => `
+          <img src="${src}" onclick="event.stopPropagation(); lbJump(${i})" style="
+            width:52px; height:40px; object-fit:cover; border-radius:5px;
+            cursor:pointer; flex-shrink:0;
+            border:2px solid ${i===current ? '#fff' : 'rgba(255,255,255,0.3)'};
+            opacity:${i===current ? '1' : '0.6'};
+            transition:all 0.2s;"/>
+        `).join('')}
+      </div>` : ''}
     `;
+    overlay.id = 'lb_overlay';
   };
 
-  window.lbSlide = (dir) => {
-    current = (current + dir + srcs.length) % srcs.length;
-    render();
-  };
+  window.lbMove = (dir) => { current = (current + dir + total) % total; render(); };
+  window.lbJump = (i) => { current = i; render(); };
 
-  overlay.addEventListener('click', () => document.body.removeChild(overlay));
+  overlay.addEventListener('click', () => {
+    if (document.getElementById('lb_overlay')) document.body.removeChild(overlay);
+  });
+
   document.body.appendChild(overlay);
   render();
 }
@@ -493,37 +497,27 @@ places.forEach(p => {
   const placeName = encodeURIComponent(p.name.replace(/[①-⑳]/g, '').trim());
   const formLink = `${MEMO_FORM_URL}&entry.placeholder=${placeName}`;
 
-  // 대표 사진 HTML 생성 (슬라이드 갤러리)
+  // 대표 사진 HTML 생성 (썸네일 전체 표시 + 클릭하면 라이트박스)
   const BASE = 'https://raw.githubusercontent.com/PastorKim/pilgrimage-2026/main/';
   const photosHTML = p.photos && p.photos.length > 0
     ? (() => {
-        const id = `gallery_${p.lat.toString().replace('.','')}`; 
+        const id = `gallery_${Math.round(p.lat*10000)}`;
+        const srcsJson = JSON.stringify(p.photos.map(s => BASE+s));
         return `
-        <div id="${id}" style="position:relative; margin-top:10px;">
-          <div class="slide-wrap" style="overflow:hidden; border-radius:8px; border:1px solid #ddd;">
-            ${p.photos.map((src, i) => `
-              <img src="${BASE}${src}" 
-                data-gallery="${id}" data-index="${i}"
-                style="
-                  width:100%; height:160px;
-                  object-fit:cover;
-                  display:${i===0?'block':'none'};
-                  cursor:pointer;
-                " 
-                onclick="openLightbox('${id}', ${i})"
-                onerror="this.style.display='none'"/>
-            `).join('')}
-          </div>
-          ${p.photos.length > 1 ? `
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-            <button onclick="slidePhoto('${id}', -1, ${p.photos.length})" style="
-              background:#3d6b40; color:white; border:none;
-              border-radius:6px; padding:4px 10px; cursor:pointer; font-size:14px;">◀</button>
-            <span id="${id}_counter" style="font-size:11px; color:#888;">1 / ${p.photos.length}</span>
-            <button onclick="slidePhoto('${id}', 1, ${p.photos.length})" style="
-              background:#3d6b40; color:white; border:none;
-              border-radius:6px; padding:4px 10px; cursor:pointer; font-size:14px;">▶</button>
-          </div>` : ''}
+        <div style="display:flex; gap:5px; margin-top:10px; overflow-x:auto; padding-bottom:4px;">
+          ${p.photos.map((src, i) => `
+            <img src="${BASE}${src}"
+              style="
+                width:80px; height:65px; flex-shrink:0;
+                object-fit:cover; border-radius:7px;
+                border:2px solid #ddd; cursor:pointer;
+                transition:border-color 0.2s;
+              "
+              onmouseover="this.style.borderColor='#3d6b40'"
+              onmouseout="this.style.borderColor='#ddd'"
+              onclick="openLightbox(${srcsJson}, ${i})"
+              onerror="this.style.display='none'"/>
+          `).join('')}
         </div>`;
       })()
     : `<div class="popup-photo-placeholder">📷 사진 준비 중<br>사진이 모이면 여기에 표시됩니다</div>`;
