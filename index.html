@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>충청지방회 성지순례 2026 — 동선 지도</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'Noto Sans KR', sans-serif; background: #f0ede8; }
+
+  /* 레이아웃 */
+  .app { display: flex; flex-direction: column; height: 100vh; }
+
+  /* 헤더 */
+  .header {
+    background: linear-gradient(135deg, #2c4a2e, #3d6b40, #4a7c4e);
+    color: white;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    z-index: 1000;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header-cross { font-size: 24px; }
+  .header-title { font-size: 15px; font-weight: 700; line-height: 1.3; }
+  .header-sub { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+
+  /* 날짜 필터 바 */
+  .day-filter {
+    background: #f7f4ef;
+    border-bottom: 1px solid #ddd8cf;
+    padding: 8px 16px;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    flex-shrink: 0;
+    scrollbar-width: none;
+    align-items: center;
+  }
+  .day-filter::-webkit-scrollbar { display: none; }
+  .filter-label { color: #888; font-size: 11px; white-space: nowrap; margin-right: 4px; }
+  .day-btn {
+    background: white;
+    border: 1px solid #d0c8bc;
+    color: #444;
+    border-radius: 16px;
+    padding: 4px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    font-family: 'Noto Sans KR', sans-serif;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .day-btn:hover { background: #eee8df; border-color: #b0a898; }
+  .day-btn.active { background: #3d6b40; color: white; border-color: #3d6b40; font-weight: 700; }
+
+  /* 지도 컨테이너 */
+  #map { flex: 1; }
+
+  /* 범례 */
+  .legend {
+    position: absolute;
+    bottom: 30px;
+    right: 10px;
+    z-index: 999;
+    background: rgba(255,252,248,0.95);
+    border: 1px solid #d0c8bc;
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: #333;
+    font-size: 11px;
+    backdrop-filter: blur(8px);
+    max-width: 180px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  }
+  .legend-title { font-weight: 700; margin-bottom: 8px; font-size: 12px; color: #222; }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; color: #444; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .legend-hotel { width: 10px; height: 10px; background: #e05599; flex-shrink: 0; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+
+  /* 팝업 커스텀 */
+  .leaflet-popup-content-wrapper {
+    background: #ffffff;
+    border: 1px solid #d8d0c4;
+    border-radius: 12px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+    color: #222;
+    max-width: 300px;
+  }
+  .leaflet-popup-tip { background: #ffffff; }
+  .leaflet-popup-content { margin: 14px 16px; }
+  .leaflet-popup-close-button { color: #888 !important; font-size: 18px !important; top: 8px !important; right: 10px !important; }
+
+  .popup-day { font-size: 10px; background: #eef5ee; color: #3d6b40; border-radius: 10px; padding: 2px 8px; display: inline-block; margin-bottom: 6px; font-weight: 600; }
+  .popup-name { font-size: 15px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; color: #1a1a1a; }
+  .popup-desc { font-size: 12px; line-height: 1.8; color: #444; white-space: pre-line; }
+  .popup-photo-placeholder {
+    background: #f5f0ea;
+    border: 1px dashed #c8bfb0;
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 10px;
+    text-align: center;
+    font-size: 11px;
+    color: #999;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- 헤더 -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-cross">✝</div>
+      <div>
+        <div class="header-title">충청지방회 성지순례 2026</div>
+        <div class="header-sub">그리스 · 튀르키예 11일 (2026.6.1~6.11) · 24명</div>
+      </div>
+    </div>
+    <div style="color:rgba(255,255,255,0.8); font-size:12px; text-align:right;">
+      마커 클릭 시<br>상세 정보 표시
+    </div>
+  </div>
+
+  <!-- 날짜 필터 -->
+  <div class="day-filter">
+    <span class="filter-label">날짜별 보기:</span>
+    <button class="day-btn active" onclick="filterDay('all')">전체</button>
+    <button class="day-btn" onclick="filterDay(1)">1일 6/1</button>
+    <button class="day-btn" onclick="filterDay(2)">2일 6/2 갑바도기아</button>
+    <button class="day-btn" onclick="filterDay(3)">3일 6/3 코냐</button>
+    <button class="day-btn" onclick="filterDay(4)">4일 6/4 파묵칼레</button>
+    <button class="day-btn" onclick="filterDay(5)">5일 6/5 에베소</button>
+    <button class="day-btn" onclick="filterDay(6)">6일 6/6 드로아→그리스</button>
+    <button class="day-btn" onclick="filterDay(7)">7일 6/7 빌립보→메테오라</button>
+    <button class="day-btn" onclick="filterDay(8)">8일 6/8 고린도</button>
+    <button class="day-btn" onclick="filterDay(9)">9일 6/9 아테네→이스탄불</button>
+    <button class="day-btn" onclick="filterDay(10)">10일 6/10 이스탄불</button>
+    <button class="day-btn" onclick="filterDay(11)">11일 6/11 귀국</button>
+    <button class="day-btn" onclick="filterDay('hotel')">🏨 숙소</button>
+  </div>
+
+  <!-- 지도 -->
+  <div id="map"></div>
+
+</div>
+
+<!-- 범례 -->
+<div class="legend">
+  <div class="legend-title">📍 날짜별 색상</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff4444"></div>1일 출발·귀국</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff8844"></div>2일 갑바도기아</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ffbb33"></div>3일 코냐</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#aadd00"></div>4일 파묵칼레</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#44cc44"></div>5일 에베소</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#00ccaa"></div>6일 드로아→그리스</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#00aaff"></div>7일 빌립보→메테오라</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#4477ff"></div>8일 고린도</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#7755ff"></div>9일 아테네</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#bb44ff"></div>10일 이스탄불</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff44aa"></div>11일 귀국</div>
+  <div class="legend-item"><div class="legend-hotel"></div>숙소</div>
+</div>
+
+<script>
+// ===== 지도 초기화 =====
+const map = L.map('map', { zoomControl: true }).setView([39.5, 28.0], 5);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+  maxZoom: 19
+}).addTo(map);
+
+// ===== 날짜별 색상 =====
+const dayColors = {
+  1: '#ff4444', 2: '#ff8844', 3: '#ffbb33', 4: '#aadd00',
+  5: '#44cc44', 6: '#00ccaa', 7: '#00aaff', 8: '#4477ff',
+  9: '#7755ff', 10: '#bb44ff', 11: '#ff44aa', hotel: '#ff66cc'
+};
+
+// ===== 마커 생성 함수 =====
+function makeIcon(day, isHotel) {
+  const color = isHotel ? dayColors.hotel : dayColors[day];
+  const symbol = isHotel ? '🏨' : day;
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      background:${color};
+      width:${isHotel ? 28 : 26}px;
+      height:${isHotel ? 28 : 26}px;
+      border-radius:50%;
+      border:2px solid rgba(255,255,255,0.8);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:${isHotel ? 14 : 11}px;
+      font-weight:700;
+      color:white;
+      box-shadow:0 2px 8px rgba(0,0,0,0.5);
+      cursor:pointer;
+    ">${symbol}</div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -16]
+  });
+}
+
+// ===== 전체 순례지 데이터 =====
+const places = [
+  // 제1일
+  { day: 1, name: '🚌 단국대 천안캠퍼스 집결', lat: 36.8330, lng: 127.1665,
+    desc: '제1일 (6/1 월)\n16:00 집결 · 버스 탑승\n충남 천안시 동남구 신부동',
+    bible: '' },
+  { day: 1, name: '✈️ 인천국제공항 출발', lat: 37.4692, lng: 126.4506,
+    desc: '제1일 (6/1 월)\n19:10 도착 · 터키항공 D카운터 집합\n23:20 TK091 인천 출발 → 이스탄불',
+    bible: '기내 숙박' },
+
+  // 제2일 — 갑바도기아
+  { day: 2, name: '✈️ 이스탄불 공항 경유', lat: 41.2753, lng: 28.7500,
+    desc: '제2일 (6/2 화)\n04:50 이스탄불 도착\n06:30 TK2010 → 카이세리\n07:55 카이세리 도착',
+    bible: '' },
+  { day: 2, name: '🕊️ 비둘기 골짜기 (피죤 밸리)', lat: 38.6204, lng: 34.8047,
+    desc: '제2일 (6/2 화)\n수백 개의 비둘기 집이 새겨진 기암 절벽\n괴뢰메~우치히사르 트레킹 코스\n비둘기 배설물을 포도밭 비료로 사용하던 전통 지역',
+    bible: '⭐ 4.6 | Uçhisar/Nevşehir, 튀르키예' },
+  { day: 2, name: '🗿 우치히사르 조망', lat: 38.6317, lng: 34.8085,
+    desc: '제2일 (6/2 화)\n갑바도기아에서 가장 높은 암석 성채\n주변 계곡과 기암 지형 파노라마 조망',
+    bible: 'Uçhisar, Nevşehir, 튀르키예' },
+  { day: 2, name: '🏛️ 괴뢰메 야외 박물관', lat: 38.6416, lng: 34.8439,
+    desc: '제2일 (6/2 화)\n초기 기독교 수도원 및 암굴 교회 유적\n갑바도기아 짚차(지프) 투어 진행\n08:00~19:15',
+    bible: '⭐ 4.6 | Göreme, Nevşehir, 튀르키예' },
+
+  // 제3일 — 코냐
+  { day: 3, name: '🕳️ 데린쿠유 지하도시', lat: 38.3734, lng: 34.7350,
+    desc: '제3일 (6/3 수)\n초기 기독교인들이 피신했던 지하도시\n지하 8층, 약 20,000명 수용 규모',
+    bible: '⭐ 4.6 | Derinkuyu, Nevşehir, 튀르키예' },
+  { day: 3, name: '🙏 루스드라 (바울 앉은뱅이 치유)', lat: 37.6014, lng: 32.3392,
+    desc: '제3일 (6/3 수)\n바울이 앉은뱅이를 고친 기적의 현장\n디모데의 고향',
+    bible: '사도행전 14장 | Hatunsaray, Konya, 튀르키예' },
+  { day: 3, name: '🏙️ 이고니온 / 코냐', lat: 37.8746, lng: 32.4932,
+    desc: '제3일 (6/3 수)\n바나바와 사울이 전도여행을 한 이고니온\n현재 코냐(Konya) 시',
+    bible: '사도행전 14:1' },
+
+  // 제4일 — 파묵칼레
+  { day: 4, name: '🏛️ 비시디아 안디옥', lat: 38.3083, lng: 31.1896,
+    desc: '제4일 (6/4 목)\n바울·바나바가 유대인 회당에서 복음을 전한 곳',
+    bible: '사도행전 13:14 | ⭐ 4.5 | Yalvaç, Isparta, 튀르키예' },
+  { day: 4, name: '⛪ 라오디게아 고대 도시', lat: 37.8367, lng: 29.1088,
+    desc: '제4일 (6/4 목)\n소아시아 7대 교회 중 하나\n"뜨겁지도 차지도 않은 교회"\n08:00~17:00',
+    bible: '요한계시록 3:14-22 | ⭐ 4.8 | Denizli, 튀르키예' },
+  { day: 4, name: '⛪ 히에라폴리스 (사도 빌립 순교 교회)', lat: 37.9137, lng: 29.1187,
+    desc: '제4일 (6/4 목)\n사도 빌립의 순교 교회 유적\n카트 투어 진행',
+    bible: 'Pamukkale, Denizli, 튀르키예' },
+
+  // 제5일 — 에베소
+  { day: 5, name: '⛪ 빌라델비아 교회', lat: 38.3494, lng: 28.5174,
+    desc: '제5일 (6/5 금)\n소아시아 7대 교회 중 하나\n"내가 네 앞에 열린 문을 두었노라"\n남은 기둥 4개가 당시 웅장한 교회 규모를 증언',
+    bible: '요한계시록 3:7-13 | ⭐ 4.5 | Alaşehir, 튀르키예' },
+  { day: 5, name: '⛪ 사데 교회', lat: 38.4883, lng: 28.0403,
+    desc: '제5일 (6/5 금)\n소아시아 7대 교회 중 하나\n"살았다 하는 이름은 가졌으나 죽은 자라"',
+    bible: '요한계시록 3:1-6 | ⭐ 4.7 | Salihli, Manisa, 튀르키예' },
+  { day: 5, name: '⛪ 사도 요한 무덤교회 (에베소)', lat: 37.9530, lng: 27.3670,
+    desc: '제5일 (6/5 금)\n사도 요한의 무덤 위에 세워진 비잔틴 대성당\n6세기 유스티니아누스 황제 건축\n교황청 공인 성지\n08:00~18:00',
+    bible: '⭐ 4.7 | Selçuk, İzmir, 튀르키예' },
+  { day: 5, name: '🪦 누가의 묘 (에베소)', lat: 37.9490, lng: 27.3630,
+    desc: '제5일 (6/5 금)\n사도 누가의 묘로 전해지는 장소\n에베소 고대도시 북문 인근',
+    bible: 'Selçuk, İzmir, 튀르키예' },
+  { day: 5, name: '🎭 오데온 (에베소)', lat: 37.9368, lng: 27.3450,
+    desc: '제5일 (6/5 금)\n1,500명 수용 소형 극장 겸 원로원\n2세기 건축 · 목재 지붕 보유 (현재 소실)',
+    bible: '⭐ 4.8 | Efes Harabeleri, Selçuk/İzmir' },
+  { day: 5, name: '📚 셀수스 도서관 (에베소)', lat: 37.9392, lng: 27.3409,
+    desc: '제5일 (6/5 금)\n고대 세계 3대 도서관 중 하나\n12,000개 두루마리 소장 · 2세기 건축\n에베소 최고의 포토존',
+    bible: '⭐ 4.8 | Selçuk/İzmir' },
+  { day: 5, name: '🎪 원형극장 (에베소)', lat: 37.9411, lng: 27.3427,
+    desc: '제5일 (6/5 금)\n고대 세계 최대 극장 중 하나 · 25,000명 수용\n바울이 은장색 데메드리오에 맞서 소동이 일어난 현장',
+    bible: '사도행전 19:29 | ⭐ 4.8 | Selçuk/İzmir' },
+
+  // 제6일 — 드로아 → 그리스
+  { day: 6, name: '🏛️ 앗소 고대 도시 (Assos)', lat: 39.4901, lng: 26.3351,
+    desc: '제6일 (6/6 토)\n바울이 드로아에서 걸어서 이동한 앗소\n아리스토텔레스가 가르쳤던 고대 도시\n아테나 신전 및 고대 항구 유적',
+    bible: '사도행전 20:13-14 | ⭐ 4.6 | Behram/Ayvacık, 튀르키예' },
+  { day: 6, name: '⚓ 알렉산드리아 드로아 항구', lat: 39.7517, lng: 26.1588,
+    desc: '제6일 (6/6 토)\n바울이 마게도냐 환상을 보고 유럽 선교를 시작한 항구\n드로아~앗소 로마길 순례',
+    bible: '사도행전 16:8-11 | ⭐ 4.4 | Dalyan Köyü, 튀르키예' },
+  { day: 6, name: '🛂 입살라 국경 (튀르키예→그리스)', lat: 40.9167, lng: 26.3833,
+    desc: '제6일 (6/6 토)\n튀르키예 → 그리스 육로 국경 통과',
+    bible: 'Ipsala Border Crossing' },
+  { day: 6, name: '⛪ 사도 바울 도착 기념교회 (까발라)', lat: 40.9399, lng: 24.4081,
+    desc: '제6일 (6/6 토)\n바울이 유럽 땅에 처음 발을 디딘 네압볼리 (현 까발라) 기념교회',
+    bible: '⭐ 4.7 | Kavala, 그리스' },
+
+  // 제7일 — 빌립보 → 메테오라
+  { day: 7, name: '⛓️ 바울 감옥터 (빌립보)', lat: 41.0133, lng: 24.2836,
+    desc: '제7일 (6/7 일)\n바울과 실라가 갇혔던 감옥\n한밤 찬송으로 옥문이 열린 기적의 장소',
+    bible: '사도행전 16:25-26 | ⭐ 4.6 | Philippi, 그리스' },
+  { day: 7, name: '🏛️ 빌립보 도시 유적', lat: 41.0120, lng: 24.2890,
+    desc: '제7일 (6/7 일)\n사도 바울이 다녀간 빌립보 도시 유적 순례',
+    bible: 'Philippi, 그리스' },
+  { day: 7, name: '💧 루디아 기념교회·세례터 (빌립보)', lat: 41.0209, lng: 24.2769,
+    desc: '제7일 (6/7 일)\n유럽 최초 개종자 루디아가 세례받은 강가\n문 밖 강가 세례터 · 루디아 기념교회\n09:00~16:00',
+    bible: '사도행전 16:14-15 | ⭐ 4.8 | Philippi, 그리스' },
+  { day: 7, name: '🏙️ 데살로니카 (경유)', lat: 40.6328, lng: 22.9486,
+    desc: '제7일 (6/7 일)\n바울이 빌립보에서 이동하여 3주간 회당에서 전도한 도시\n현재 테살로니키 — 그리스 제2의 도시\n경유 후 메테오라로 이동',
+    bible: '사도행전 17:1-9 | Thessaloniki, 그리스' },
+  { day: 7, name: '🙏 베뢰아 베마 (바울의 설교단)', lat: 40.5185, lng: 22.2000,
+    desc: '제7일 (6/7 일)\n바울이 데살로니가에서 피신해 전도한 곳\n"베뢰아 사람들은 더 신사적이어서 간절한 마음으로 말씀을 받고"\n당시 바울이 서서 설교한 대리석 계단 현재까지 보존\n아름다운 모자이크 벽화와 바울 동상\n07:00~20:30',
+    bible: '사도행전 17:10-15 | ⭐ 4.6 | Veria, 그리스' },
+  { day: 7, name: '🏔️ 메테오라 (도착)', lat: 39.7217, lng: 21.6306,
+    desc: '제7일 (6/7 일)\n기암 위에 세워진 그리스 정교회 수도원\n유네스코 세계문화유산',
+    bible: '⭐ 4.9 | Kalabaka, 그리스' },
+
+  // 제8일 — 고린도
+  { day: 8, name: '🏔️ 바를라암 수도원 (메테오라)', lat: 39.7250, lng: 21.6298,
+    desc: '제8일 (6/8 월)\n메테오라 최대 규모 수도원 중 하나\n16세기 건축 · 비잔틴 프레스코화 · 고대 필사본 소장\n수도원 박물관 · 포도주 저장고\n⚠️ 복장 규정: 무릎 이상·민소매·슬리퍼 입장 불가\n월~목·토·일 09:00~16:00 (금요일 휴관)',
+    bible: '⭐ 4.8 | Meteoron, Kalampaka, 그리스' },
+  { day: 8, name: '⚔️ 레오니다스와 300 스파르타인 기념비', lat: 38.7968, lng: 22.5366,
+    desc: '제8일 (6/8 월)\n기원전 480년 페르시아 대군에 맞서 300명의 스파르타 용사가 산화한 테르모필레 전투 현장\n"지나가는 자여, 가서 스파르타인들에게 전하라. 우리는 그들의 명령에 복종하여 여기 잠들어 있노라고"\n24시간 개방',
+    bible: '⭐ 4.4 | Thermopylae, 그리스' },
+  { day: 8, name: '🏛️ 고린도 유적 및 비마 터', lat: 37.9057, lng: 22.8779,
+    desc: '제8일 (6/8 월)\n바울이 18개월 사역한 도시\n갈리오 앞에 선 바울의 재판석(비마) 유적\n08:00~19:00',
+    bible: '사도행전 18장 | ⭐ 4.7 | Archaia Korinthos, 그리스' },
+
+  // 제9일 — 아테네
+  { day: 9, name: '🌊 고린도 운하', lat: 37.9342, lng: 22.9844,
+    desc: '제9일 (6/9 화)\n세계 3대 운하 중 하나\n길이 6.3km · 깊이 8m · 폭 25m',
+    bible: '⭐ 4.7 | Isthmia, 그리스' },
+  { day: 9, name: '🏛️ 파르테논 신전 (아크로폴리스)', lat: 37.9715, lng: 23.7267,
+    desc: '제9일 (6/9 화)\n유네스코 세계문화유산 1호\nBC 447년 건축, 아테나 여신 신전',
+    bible: '⭐ 4.8 | Athens, 그리스' },
+  { day: 9, name: '🙏 아레오바고 언덕 (바울의 설교지)', lat: 37.9724, lng: 23.7232,
+    desc: '제9일 (6/9 화)\n바울이 아테네 시민에게 "알지 못하는 신"을 전한 곳\n그리스도의 복음이 유럽 지성의 중심에 선언된 역사적 장소',
+    bible: '사도행전 17:22-31 | ⭐ 4.8 | Athens, 그리스' },
+  { day: 9, name: '🏛️ 신타그마 광장 / 국회의사당', lat: 37.9753, lng: 23.7356,
+    desc: '제9일 (6/9 화)\n헌법광장 · 국회의사당 · 무명용사의 비 관람',
+    bible: 'Syntagma Square, Athens, 그리스' },
+  { day: 9, name: '✈️ 아테네 공항 → 이스탄불', lat: 37.9364, lng: 23.9445,
+    desc: '제9일 (6/9 화)\n22:00 TK1846 아테네 출발\n23:35 이스탄불 도착',
+    bible: 'Athens International Airport' },
+
+  // 제10일 — 이스탄불
+  { day: 10, name: '🏛️ 히포드럼 (오벨리스크)', lat: 41.0054, lng: 28.9746,
+    desc: '제10일 (6/10 수)\nBC 15세기에 세워진 오벨리스크\n비잔틴 제국 전차 경주장 유적',
+    bible: 'Sultanahmet, Istanbul' },
+  { day: 10, name: '🕌 블루모스크 외관', lat: 41.0054, lng: 28.9740,
+    desc: '제10일 (6/10 수)\n이슬람 사원, 6개의 첨탑 (외관 관람)\n술탄 아흐멧 모스크',
+    bible: 'Sultanahmet, Istanbul' },
+  { day: 10, name: '⛪ 성소피아 성당 외관', lat: 41.0086, lng: 28.9802,
+    desc: '제10일 (6/10 수)\n세계 건축사상 가장 뛰어난 건축물 중 하나\n537년 건축 · 비잔틴 건축의 걸작\n⚠️ 여성 입장 시 스카프 필요',
+    bible: '⭐ 4.8 | Fatih, Istanbul' },
+  { day: 10, name: '⛵ 보스포러스 전세선 탑승', lat: 41.0174, lng: 28.9840,
+    desc: '제10일 (6/10 수)\n유럽과 아시아를 가르는 보스포러스 해협 유람',
+    bible: 'Eminönü, Istanbul' },
+  { day: 10, name: '🛍️ 그랜드 바자르 (쇼핑)', lat: 41.0107, lng: 28.9681,
+    desc: '제10일 (6/10 수)\n이스탄불 최대 전통 시장\n장미·올리브, 로쿰 & 잡화 쇼핑\n월~토 08:30~19:00\n이후 이스탄불 공항 이동 → 기내 숙박',
+    bible: '⭐ 4.4 | Beyazıt, Fatih, Istanbul' },
+
+  // 제11일
+  { day: 11, name: '✈️ 이스탄불 공항 출발 (귀국)', lat: 41.2753, lng: 28.7500,
+    desc: '제11일 (6/11 목)\n01:50 TK090 이스탄불 출발 → 인천',
+    bible: 'İstanbul Havalimanı' },
+  { day: 11, name: '🏠 인천국제공항 도착 — 귀국!', lat: 37.4692, lng: 126.4506,
+    desc: '제11일 (6/11 목)\n17:40 인천국제공항 도착 및 해산\n수고하셨습니다! ✝️',
+    bible: '인천국제공항 제1터미널' },
+];
+
+// 숙소 데이터
+const hotels = [
+  { day: 2, name: '🏨 SUHAN CAPPADOCIA HOTEL ★★★★★', lat: 38.7147, lng: 34.8370,
+    desc: '6/2 숙박\nYeni Mah, Kızılırmak Cd. No:15, 50500 Avanos/Nevşehir\n+90 384 511 67 23 | suhankapadokya.com' },
+  { day: 3, name: '🏨 GRAND KONYA HOTEL ★★★★★', lat: 38.0056, lng: 32.5170,
+    desc: '6/3 숙박\nAkademi, Yeni İstanbul Cd. No:231, Selçuklu/Konya\n+90 332 221 50 00 | grandhotelkonya.com' },
+  { day: 4, name: '🏨 LYCUS RIVER TERMAL HOTEL ★★★★★', lat: 37.9543, lng: 29.1096,
+    desc: '6/4 숙박\n⚠️ 수영장·온천 이용 시 수영복·수영모 필수!\nKarahayit Mevkii, Pamukkale 20290\n+90 258 259 10 49' },
+  { day: 5, name: '🏨 GRAND TEMIZEL HOTEL ★★★★★', lat: 39.2695, lng: 26.6876,
+    desc: '6/5 숙박\nKüçükköy, Sarımsaklı Blv, 10400 Ayvalık/Balıkesir\n+90 266 202 23 01' },
+  { day: 6, name: '🏨 OCEANIS HOTEL ★★★★', lat: 40.9365, lng: 24.4059,
+    desc: '6/6 숙박\nErithrou Stavrou 32, Kavala 654 03, 그리스\n+30 251 060 0060 | oceaniskavala.gr' },
+  { day: 7, name: '🏨 FAMISSI EDEN HOTEL ★★★★', lat: 39.7025, lng: 21.6362,
+    desc: '6/7 숙박\nKalabaka 422 00, 그리스\n+30 2432 024991 | famissiedenresorthotel.com' },
+  { day: 8, name: '🏨 KALAMAKI BEACH HOTEL ★★★★', lat: 37.8890, lng: 23.0061,
+    desc: '6/8 숙박\nIsthmia, Kechries 201 00, 그리스\n+30 2741 037653 | kalamakibeach.gr' },
+  { day: 9, name: '🏨 CLARION HOTEL ISTANBUL ★★★★★', lat: 41.0557, lng: 28.8185,
+    desc: '6/9 숙박\nMahmutbey, Peyami Safa Cd. No:44, Bağcılar/İstanbul\n+90 212 445 45 86' },
+];
+
+// ===== 마커 레이어 그룹 =====
+const allMarkers = [];
+const markerLayers = {};
+for (let d = 1; d <= 11; d++) markerLayers[d] = [];
+markerLayers['hotel'] = [];
+
+// 순례지 마커 생성
+places.forEach(p => {
+  const marker = L.marker([p.lat, p.lng], { icon: makeIcon(p.day, false) });
+  const popupHTML = `
+    <div class="popup-day">제${p.day}일 · ${['','6/1','6/2','6/3','6/4','6/5','6/6','6/7','6/8','6/9','6/10','6/11'][p.day]}</div>
+    <div class="popup-name">${p.name}</div>
+    <div class="popup-desc">${p.desc}</div>
+    ${p.bible ? `<div class="popup-desc" style="margin-top:6px; opacity:0.6; font-size:11px;">📖 ${p.bible}</div>` : ''}
+    <div class="popup-photo-placeholder">📷 사진 준비 중<br>사진이 모이면 여기에 표시됩니다</div>
+  `;
+  marker.bindPopup(popupHTML, { maxWidth: 300 });
+  marker.addTo(map);
+  allMarkers.push({ marker, day: p.day });
+  markerLayers[p.day].push(marker);
+});
+
+// 숙소 마커 생성
+hotels.forEach(h => {
+  const marker = L.marker([h.lat, h.lng], { icon: makeIcon(h.day, true) });
+  const popupHTML = `
+    <div class="popup-day">🏨 숙소 · 제${h.day}일</div>
+    <div class="popup-name">${h.name}</div>
+    <div class="popup-desc">${h.desc}</div>
+  `;
+  marker.bindPopup(popupHTML, { maxWidth: 300 });
+  marker.addTo(map);
+  allMarkers.push({ marker, day: 'hotel' });
+  markerLayers['hotel'].push(marker);
+});
+
+// ===== 전체 이동 경로선 =====
+const routeCoords = [
+  [36.8330, 127.1665], [37.4692, 126.4506], [41.2753, 28.7500],
+  [38.7147, 34.8370], [38.6204, 34.8047], [38.6317, 34.8085],
+  [38.6416, 34.8439], [38.3734, 34.7350], [37.6014, 32.3392],
+  [38.0056, 32.5170], [38.3083, 31.1896], [37.8367, 29.1088],
+  [37.9137, 29.1187], [37.9543, 29.1096], [38.3494, 28.5174],
+  [38.4883, 28.0403], [37.9530, 27.3670], [37.9392, 27.3409],
+  [37.9411, 27.3427], [39.2695, 26.6876], [39.4901, 26.3351],
+  [39.7517, 26.1588], [40.9167, 26.3833], [40.9399, 24.4081],
+  [40.9365, 24.4059], [41.0133, 24.2836], [41.0209, 24.2769],
+  [40.6328, 22.9486], [40.5185, 22.2000], [39.7217, 21.6306],
+  [39.7250, 21.6298], [38.7968, 22.5366], [37.9057, 22.8779],
+  [37.9342, 22.9844], [37.9715, 23.7267], [37.9724, 23.7232],
+  [37.9364, 23.9445], [41.0557, 28.8185], [41.0086, 28.9802],
+  [41.0107, 28.9681], [41.2753, 28.7500], [37.4692, 126.4506],
+];
+
+const routeLine = L.polyline(routeCoords, {
+  color: '#ff9944',
+  weight: 2,
+  opacity: 0.5,
+  dashArray: '6, 6'
+}).addTo(map);
+
+// ===== 날짜 필터 함수 =====
+function filterDay(day) {
+  // 버튼 활성화
+  document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+
+  if (day === 'all') {
+    allMarkers.forEach(({ marker }) => map.addLayer(marker));
+    map.addLayer(routeLine);
+    map.setView([39.5, 28.0], 5);
+    return;
+  }
+
+  // 해당 날짜만 표시
+  allMarkers.forEach(({ marker, day: mDay }) => {
+    if (day === 'hotel') {
+      mDay === 'hotel' ? map.addLayer(marker) : map.removeLayer(marker);
+    } else {
+      mDay === day ? map.addLayer(marker) : map.removeLayer(marker);
+    }
+  });
+
+  // 경로선 숨김
+  map.removeLayer(routeLine);
+
+  // 해당 날짜 마커로 지도 이동
+  const targets = markerLayers[day];
+  if (targets && targets.length > 0) {
+    const group = L.featureGroup(targets);
+    map.fitBounds(group.getBounds().pad(0.3));
+  }
+}
+</script>
+</body>
+</html>
