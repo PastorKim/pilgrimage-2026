@@ -240,10 +240,12 @@ const places = [
     desc: '제2일 (6/2 화)\n🕖 07:55 카이세리 에르킬레트 공항 도착\n버스로 갑바도기아 이동 시작\n공항 → 우치히사르까지 약 1시간 소요\n\n🏛️ 역사 배경\n카이세리(고대명 카이사레아)는 초기 기독교의 중요한 도시였습니다. 4세기 위대한 신학자 바실리우스(대 바실)가 이곳에서 태어났으며, 갑바도기아 교부들의 중심지였습니다.',
     bible: 'Kayseri Erkilet Airport, 튀르키예' },
   { day: 2, name: '🗿 ⑤ 우치히사르 성채 조망', lat: 38.67244, lng: 34.88544,
+    photos: ['photos/day02/uchisar/IMG_1038.jpeg','photos/day02/uchisar/IMG_1040.jpeg'],
     desc: '제2일 (6/2 화)\n🕙 오전 10:00 도착\n카이세리 공항에서 버스로 이동 후 첫 번째 방문지\n\n🏛️ 역사 배경\n우치히사르(Uçhisar)는 "세 개의 성"이라는 뜻으로 갑바도기아에서 가장 높은 지점입니다. 화산 응회암이 수천 년 풍화로 빚어낸 이 기암 성채는 고대부터 요새와 거주지로 사용되었습니다.\n\n✝️ 순례 포인트\n초기 기독교인들은 로마의 박해를 피해 이 기암 속 동굴 교회와 지하도시에 숨어 신앙을 지켰습니다. 하나님이 자연을 통해 만들어 주신 피난처입니다.',
     bible: 'Uçhisar, Nevşehir, 튀르키예' },
   { day: 2, name: '🍽️ ⑥ Altinocak 식당 (항아리 케밥)', lat: 38.71642, lng: 34.82648,
     type: 'restaurant',
+    photos: ['photos/day02/restaurant/restaurant_01.png','photos/day02/restaurant/restaurant_02.png','photos/day02/restaurant/restaurant_03.png'],
     desc: '제2일 (6/2 화)\n🕚 오전 11:00 점심식사\n\n🍖 메뉴 안내\n항아리 케밥 (Testi Kebabı) — 갑바도기아 전통 요리\n양고기·채소를 항아리에 넣고 장시간 숙성·조리 후, 웨이터가 직접 항아리를 깨서 내어주는 퍼포먼스로 유명합니다.\n동굴 형태의 독특한 레스토랑 건물이 갑바도기아의 분위기를 그대로 살려줍니다.',
     bible: 'Altinocak, Avanos/Nevşehir | ☎ +90 505 654 50 50' },
   { day: 2, name: '🚙 ⑦ 갑바도기아 지프 투어', lat: 38.6500, lng: 34.8300,
@@ -424,12 +426,29 @@ places.forEach(p => {
   const tagLabel = type === 'restaurant' ? '🍽️ 식당' : `제${p.day}일 · ${['','6/1 출발','6/2','6/3','6/4','6/5','6/6','6/7','6/8','6/9','6/10','6/11 귀국'][p.day]}`;
   const placeName = encodeURIComponent(p.name.replace(/[①-⑳]/g, '').trim());
   const formLink = `${MEMO_FORM_URL}&entry.placeholder=${placeName}`;
+
+  // 대표 사진 HTML 생성
+  const BASE = 'https://raw.githubusercontent.com/PastorKim/pilgrimage-2026/main/';
+  const photosHTML = p.photos && p.photos.length > 0
+    ? `<div style="display:flex; gap:4px; margin-top:10px; overflow-x:auto;">
+        ${p.photos.map(src => `
+          <a href="${BASE}${src}" target="_blank" style="flex-shrink:0;">
+            <img src="${BASE}${src}" style="
+              width:85px; height:65px;
+              object-fit:cover;
+              border-radius:6px;
+              border:1px solid #ddd;
+            " onerror="this.style.display='none'"/>
+          </a>`).join('')}
+       </div>`
+    : `<div class="popup-photo-placeholder">📷 사진 준비 중<br>사진이 모이면 여기에 표시됩니다</div>`;
+
   const popupHTML = `
     <div class="popup-day">${tagLabel}</div>
     <div class="popup-name">${p.name}</div>
     <div class="popup-desc">${p.desc}</div>
     ${p.bible ? `<div class="popup-desc" style="margin-top:6px; opacity:0.6; font-size:11px;">📖 ${p.bible}</div>` : ''}
-    ${type !== 'restaurant' ? `<div class="popup-photo-placeholder">📷 사진 준비 중<br>사진이 모이면 여기에 표시됩니다</div>` : ''}
+    ${photosHTML}
     <a href="${MEMO_FORM_URL}" target="_blank" style="
       display:block; margin-top:10px; padding:8px 12px;
       background:#3d6b40; color:white; text-decoration:none;
