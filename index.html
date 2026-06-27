@@ -82,10 +82,6 @@
     transition: all 0.4s ease;
     overflow: hidden;
   }
-  .legend.collapsed {
-    max-width: 36px;
-    border-radius: 18px;
-  }
   .legend-header {
     display: flex;
     align-items: center;
@@ -93,15 +89,17 @@
     padding: 10px 12px;
     cursor: pointer;
     user-select: none;
+    gap: 8px;
   }
   .legend-title {
     font-weight: 700;
     font-size: 12px;
     color: #222;
     white-space: nowrap;
-    transition: opacity 0.3s;
+    transition: opacity 0.3s, max-width 0.4s;
+    max-width: 140px;
+    overflow: hidden;
   }
-  .legend.collapsed .legend-title { opacity: 0; }
   .legend-toggle {
     background: #3d6b40;
     color: white;
@@ -109,7 +107,7 @@
     border-radius: 50%;
     width: 22px;
     height: 22px;
-    font-size: 12px;
+    font-size: 11px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -118,10 +116,15 @@
     transition: transform 0.4s;
     line-height: 1;
   }
+  /* 펼쳐진 상태: ▶ (오른쪽), 접힌 상태: ◀ (왼쪽 = 180도 회전) */
   .legend.collapsed .legend-toggle { transform: rotate(180deg); }
+
+  /* 접혔을 때 미니 표시 - 색상점 제거 */
+  .legend-mini { display: none; }
+
   .legend-body {
     padding: 0 12px 10px;
-    transition: opacity 0.3s;
+    transition: opacity 0.3s, max-height 0.4s;
     max-height: 300px;
     overflow: hidden;
   }
@@ -129,6 +132,7 @@
     opacity: 0;
     max-height: 0;
     padding: 0;
+    pointer-events: none;
   }
   .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; color: #444; }
   .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
@@ -222,7 +226,24 @@
 <div class="legend" id="legend">
   <div class="legend-header" onclick="toggleLegend()">
     <span class="legend-title">📍 날짜별 색상</span>
-    <button class="legend-toggle">◀</button>
+    <button class="legend-toggle">▶</button>
+  </div>
+  <!-- 접혔을 때 미니 색상 점 표시 -->
+  <div class="legend-mini">
+    <div class="legend-mini-dot" style="background:#ff4444" title="1일 출발"></div>
+    <div class="legend-mini-dot" style="background:#ff8844" title="2일 갑바도기아"></div>
+    <div class="legend-mini-dot" style="background:#ffbb33" title="3일 코냐"></div>
+    <div class="legend-mini-dot" style="background:#aadd00" title="4일 파묵칼레"></div>
+    <div class="legend-mini-dot" style="background:#44cc44" title="5일 에베소"></div>
+    <div class="legend-mini-dot" style="background:#00ccaa" title="6일 드로아→그리스"></div>
+    <div class="legend-mini-dot" style="background:#00aaff" title="7일 빌립보→메테오라"></div>
+    <div class="legend-mini-dot" style="background:#4477ff" title="8일 고린도"></div>
+    <div class="legend-mini-dot" style="background:#7755ff" title="9일 아테네"></div>
+    <div class="legend-mini-dot" style="background:#bb44ff" title="10일 이스탄불"></div>
+    <div class="legend-mini-dot" style="background:#ff44aa" title="11일 귀국"></div>
+    <div class="legend-mini-dot" style="background:#e05599" title="숙소"></div>
+    <div class="legend-mini-dot" style="background:#e07b39" title="식당"></div>
+    <div class="legend-mini-dot" style="background:#5588cc" title="공항"></div>
   </div>
   <div class="legend-body">
     <div class="legend-item"><div class="legend-dot" style="background:#ff4444"></div>1일 출발</div>
