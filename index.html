@@ -93,23 +93,38 @@
     border-radius: 12px;
     box-shadow: 0 6px 24px rgba(0,0,0,0.18);
     color: #222;
-    max-width: 300px;
+    max-width: 320px;
+    width: 320px;
   }
   .leaflet-popup-tip { background: #ffffff; }
-  .leaflet-popup-content { margin: 14px 16px; }
-  .leaflet-popup-close-button { color: #888 !important; font-size: 18px !important; top: 8px !important; right: 10px !important; }
+  .leaflet-popup-content { margin: 14px 16px; width: auto !important; }
+  .leaflet-popup-close-button { color: #888 !important; font-size: 20px !important; top: 8px !important; right: 10px !important; }
 
-  .popup-day { font-size: 12px; background: #eef5ee; color: #3d6b40; border-radius: 10px; padding: 2px 8px; display: inline-block; margin-bottom: 6px; font-weight: 600; }
-  .popup-name { font-size: 16px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; color: #1a1a1a; }
-  .popup-desc { font-size: 13px; line-height: 1.9; color: #444; white-space: pre-line; }
+  .popup-day { font-size: 13px; background: #eef5ee; color: #3d6b40; border-radius: 10px; padding: 3px 10px; display: inline-block; margin-bottom: 8px; font-weight: 700; }
+  .popup-name { font-size: 17px; font-weight: 700; margin-bottom: 10px; line-height: 1.4; color: #1a1a1a; }
+  .popup-desc {
+    font-size: 14px;
+    line-height: 1.9;
+    color: #444;
+    white-space: pre-line;
+    height: 140px;
+    overflow-y: auto;
+    padding-right: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: #c0b8b0 transparent;
+  }
+  .popup-desc::-webkit-scrollbar { width: 4px; }
+  .popup-desc::-webkit-scrollbar-track { background: transparent; }
+  .popup-desc::-webkit-scrollbar-thumb { background: #c0b8b0; border-radius: 4px; }
+  .popup-bible { font-size: 12px; margin-top: 6px; opacity: 0.6; }
   .popup-photo-placeholder {
     background: #f5f0ea;
     border: 1px dashed #c8bfb0;
     border-radius: 8px;
-    padding: 10px;
+    padding: 12px;
     margin-top: 10px;
     text-align: center;
-    font-size: 12px;
+    font-size: 13px;
     color: #999;
   }
 </style>
@@ -191,32 +206,51 @@ const dayColors = {
 };
 
 // ===== 마커 생성 함수 =====
-function makeIcon(day, type) {
-  // type: 'place' | 'hotel' | 'restaurant'
+function makeIcon(day, type, label) {
   const isHotel = type === 'hotel';
   const isRestaurant = type === 'restaurant';
   const color = isHotel ? dayColors.hotel : isRestaurant ? dayColors.restaurant : dayColors[day];
   const symbol = isHotel ? '🏨' : isRestaurant ? '🍽️' : day;
   const size = (isHotel || isRestaurant) ? 28 : 26;
   const fontSize = (isHotel || isRestaurant) ? 14 : 11;
+
+  // 레이블: 이모지·번호 제거하고 핵심 이름만
+  const cleanLabel = label
+    ? label.replace(/[①-⑳✈️🚌🏛️⛪🙏💧⛓️🏔️⚔️🌊🛂⚓🕌🛍️⛵🏠🗿🍽️🕳️🪦🎭📚🎪]/gu, '').replace(/[①②③④⑤⑥⑦⑧⑨⑩]/g,'').trim().split(/[\s(]/)[0]
+    : '';
+
   return L.divIcon({
     className: '',
-    html: `<div style="
-      background:${color};
-      width:${size}px;
-      height:${size}px;
-      border-radius:50%;
-      border:2px solid rgba(255,255,255,0.8);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:${fontSize}px;
-      font-weight:700;
-      color:white;
-      box-shadow:0 2px 8px rgba(0,0,0,0.5);
-      cursor:pointer;
-    ">${symbol}</div>`,
-    iconSize: [28, 28],
+    html: `
+      <div style="display:flex; flex-direction:column; align-items:center;">
+        <div style="
+          background:${color};
+          width:${size}px; height:${size}px;
+          border-radius:50%;
+          border:2px solid rgba(255,255,255,0.8);
+          display:flex; align-items:center; justify-content:center;
+          font-size:${fontSize}px; font-weight:700; color:white;
+          box-shadow:0 2px 8px rgba(0,0,0,0.5);
+          cursor:pointer;
+        ">${symbol}</div>
+        ${cleanLabel ? `<div style="
+          margin-top:2px;
+          background:rgba(255,255,255,0.92);
+          border:1px solid rgba(0,0,0,0.15);
+          border-radius:4px;
+          padding:1px 5px;
+          font-size:9px;
+          font-weight:700;
+          color:#222;
+          white-space:nowrap;
+          max-width:80px;
+          overflow:hidden;
+          text-overflow:ellipsis;
+          box-shadow:0 1px 3px rgba(0,0,0,0.2);
+          font-family:'Noto Sans KR',sans-serif;
+        ">${cleanLabel}</div>` : ''}
+      </div>`,
+    iconSize: [28, 44],
     iconAnchor: [14, 14],
     popupAnchor: [0, -16]
   });
@@ -492,7 +526,7 @@ markerLayers['restaurant'] = [];
 // 순례지 마커 생성
 places.forEach(p => {
   const type = p.type || 'place';
-  const marker = L.marker([p.lat, p.lng], { icon: makeIcon(p.day, type) });
+  const marker = L.marker([p.lat, p.lng], { icon: makeIcon(p.day, type, p.name) });
   const tagLabel = type === 'restaurant' ? '🍽️ 식당' : `제${p.day}일 · ${['','6/1 출발','6/2','6/3','6/4','6/5','6/6','6/7','6/8','6/9','6/10','6/11 귀국'][p.day]}`;
   const placeName = encodeURIComponent(p.name.replace(/[①-⑳]/g, '').trim());
   const formLink = `${MEMO_FORM_URL}&entry.placeholder=${placeName}`;
@@ -526,7 +560,7 @@ places.forEach(p => {
     <div class="popup-day">${tagLabel}</div>
     <div class="popup-name">${p.name}</div>
     <div class="popup-desc">${p.desc}</div>
-    ${p.bible ? `<div class="popup-desc" style="margin-top:6px; opacity:0.6; font-size:11px;">📖 ${p.bible}</div>` : ''}
+    ${p.bible ? `<div class="popup-bible">📖 ${p.bible}</div>` : ''}
     ${photosHTML}
     <a href="${MEMO_FORM_URL}" target="_blank" style="
       display:block; margin-top:10px; padding:8px 12px;
@@ -545,7 +579,7 @@ places.forEach(p => {
 
 // 숙소 마커 생성
 hotels.forEach(h => {
-  const marker = L.marker([h.lat, h.lng], { icon: makeIcon(h.day, 'hotel') });
+  const marker = L.marker([h.lat, h.lng], { icon: makeIcon(h.day, 'hotel', h.name) });
   const popupHTML = `
     <div class="popup-day">🏨 숙소 · 제${h.day}일</div>
     <div class="popup-name">${h.name}</div>
