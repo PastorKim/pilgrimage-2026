@@ -107,7 +107,7 @@
     line-height: 1.9;
     color: #444;
     white-space: pre-line;
-    height: 140px;
+    height: 180px;
     overflow-y: auto;
     padding-right: 4px;
     scrollbar-width: thin;
@@ -186,6 +186,7 @@
   <div class="legend-item"><div class="legend-dot" style="background:#ff44aa"></div>11일 귀국</div>
   <div class="legend-item"><div class="legend-hotel"></div>숙소</div>
   <div class="legend-item"><div class="legend-dot" style="background:#e07b39"></div>🍽️ 식당</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#5588cc"></div>✈️ 공항</div>
 </div>
 
 <script>
@@ -202,17 +203,21 @@ const dayColors = {
   1: '#ff4444', 2: '#ff8844', 3: '#ffbb33', 4: '#aadd00',
   5: '#44cc44', 6: '#00ccaa', 7: '#00aaff', 8: '#4477ff',
   9: '#7755ff', 10: '#bb44ff', 11: '#ff44aa',
-  hotel: '#e05599', restaurant: '#e07b39'
+  hotel: '#e05599', restaurant: '#e07b39', airport: '#5588cc'
 };
 
 // ===== 마커 생성 함수 =====
 function makeIcon(day, type, label) {
   const isHotel = type === 'hotel';
   const isRestaurant = type === 'restaurant';
-  const color = isHotel ? dayColors.hotel : isRestaurant ? dayColors.restaurant : dayColors[day];
-  const symbol = isHotel ? '🏨' : isRestaurant ? '🍽️' : day;
-  const size = (isHotel || isRestaurant) ? 28 : 26;
-  const fontSize = (isHotel || isRestaurant) ? 14 : 11;
+  const isAirport = type === 'airport';
+  const color = isHotel ? dayColors.hotel
+    : isRestaurant ? dayColors.restaurant
+    : isAirport ? dayColors.airport
+    : dayColors[day];
+  const symbol = isHotel ? '🏨' : isRestaurant ? '🍽️' : isAirport ? '✈️' : day;
+  const size = (isHotel || isRestaurant || isAirport) ? 28 : 26;
+  const fontSize = (isHotel || isRestaurant || isAirport) ? 14 : 11;
 
   // 레이블: 이모지·번호 제거하고 핵심 이름만
   const cleanLabel = label
@@ -263,14 +268,17 @@ const places = [
     desc: '제1일 (6/1 월)\n🕓 16:00 집결 · 버스 탑승 · 인천공항으로 출발\n충남 천안시 동남구 신부동 224-27\n\n✝️ 순례 묵상\n"여호와께서 아브람에게 이르시되 너는 너의 고향과 친척과 아버지의 집을 떠나 내가 네게 보여 줄 땅으로 가라" (창 12:1)\n출발의 순간, 우리도 믿음으로 새로운 땅을 향해 발걸음을 내딛습니다.',
     bible: '' },
   { day: 1, name: '✈️ ② 인천국제공항 출국', lat: 37.4692, lng: 126.4506,
+    type: 'airport',
     desc: '제1일 (6/1 월)\n🕖 19:10 공항 도착 · 터키항공 D카운터 앞 집합\n🕚 23:20 TK091 인천 출발 → 이스탄불\n💤 기내 숙박\n\n✝️ 순례 묵상\n사도 바울의 발자취를 따라 소아시아와 그리스로 향하는 여정의 시작입니다. 1세기 복음의 땅을 직접 밟으며 말씀이 살아 역사하심을 경험하는 11일이 되기를 기도합니다.',
     bible: '인천국제공항 제1터미널' },
 
   // 제2일 — 이스탄불 경유 → 갑바도기아
   { day: 2, name: '✈️ ③ 이스탄불 공항 경유', lat: 41.2753, lng: 28.7500,
+    type: 'airport',
     desc: '제2일 (6/2 화) — 현지시간\n🕓 04:50 이스탄불 공항 도착\n🕡 06:30 TK2010 이스탄불 → 카이세리 출발\n🕖 07:55 카이세리 공항 도착 · 버스 이동 시작\n\n🏛️ 역사 배경\n이스탄불(콘스탄티노플)은 비잔틴 제국과 오스만 제국의 수도로, 기독교 역사에서 가장 중요한 도시 중 하나입니다. 313년 밀라노 칙령으로 기독교가 공인된 후, 이 도시는 동방교회의 중심지가 되었습니다.',
     bible: 'İstanbul Havalimanı' },
   { day: 2, name: '✈️ ④ 카이세리 공항 도착', lat: 38.7713, lng: 35.4953,
+    type: 'airport',
     desc: '제2일 (6/2 화)\n🕖 07:55 카이세리 에르킬레트 공항 도착\n버스로 갑바도기아 이동 시작\n공항 → 우치히사르까지 약 1시간 소요\n\n🏛️ 역사 배경\n카이세리(고대명 카이사레아)는 초기 기독교의 중요한 도시였습니다. 4세기 위대한 신학자 바실리우스(대 바실)가 이곳에서 태어났으며, 갑바도기아 교부들의 중심지였습니다.',
     bible: 'Kayseri Erkilet Airport, 튀르키예' },
   { day: 2, name: '🗿 ⑤ 우치히사르 성채 조망', lat: 38.67244, lng: 34.88544,
@@ -396,6 +404,7 @@ const places = [
     desc: '제9일 (6/9 화)\n헌법광장 · 국회의사당 · 무명용사의 비 관람\n\n🏛️ 역사 배경\n그리스 민주주의의 발상지 아테네의 중심 광장입니다. 무명용사의 비에는 고대 그리스의 전사를 묘사한 부조가 새겨져 있으며, 에브조네스(Evzones) 근위병의 교대식이 매 시간 거행됩니다.\n\n✝️ 순례 포인트\n민주주의의 발상지에서 우리는 "모든 권세는 하나님께로부터" (롬 13:1) 온다는 진리를 묵상합니다.',
     bible: 'Syntagma Square, Athens, 그리스' },
   { day: 9, name: '✈️ 아테네 공항 → 이스탄불', lat: 37.9364, lng: 23.9445,
+    type: 'airport',
     desc: '제9일 (6/9 화)\n🕙 22:00 TK1846 아테네 출발\n🕚 23:35 이스탄불 도착\n\n✝️ 순례 묵상\n그리스 성지 순례의 마지막 밤입니다. 빌립보에서 시작하여 베뢰아, 고린도, 아테네까지 — 바울의 발자취를 따라온 여정을 감사드립니다. 내일은 최종 목적지 이스탄불에서 순례를 마무리합니다.',
     bible: 'Athens International Airport' },
 
@@ -415,12 +424,18 @@ const places = [
   { day: 10, name: '🛍️ 그랜드 바자르 (쇼핑)', lat: 41.0107, lng: 28.9681,
     desc: '제10일 (6/10 수)\n월~토 08:30~19:00 | 이후 이스탄불 공항 이동 → 기내 숙박\n\n🏛️ 역사 배경\n1461년 건설된 세계 최고(最古) 쇼핑몰 중 하나로, 지붕 덮인 61개 골목길에 4,000여 개 상점이 들어서 있습니다. 카펫·도자기·향신료·금은 세공품 등 중동·지중해 문물이 한자리에 모입니다.\n\n✝️ 순례 묵상\n11일 순례의 마지막 일정입니다. 기념품을 고르며 함께한 동행자들과의 추억을 나누고, 이 순례가 우리의 신앙에 남긴 것들을 마음에 새깁니다. "우리 주 예수 그리스도의 은혜가 너희 모든 자들에게 있을지어다" (빌 4:23)',
     bible: '⭐ 4.4 | Beyazıt, Fatih, Istanbul' },
+  { day: 10, name: '✈️ 이스탄불 공항 출발 (귀국행)', lat: 41.2753, lng: 28.7500,
+    type: 'airport',
+    desc: '제10일 (6/10 수) → 제11일 (6/11 목)\n🕑 01:50 TK090 이스탄불 출발 → 인천\n💤 기내 숙박\n\n✝️ 귀국 묵상\n11일간의 성지 순례를 마칩니다. 바울의 발자취를 따라 소아시아와 그리스를 순례하며 경험한 말씀의 생생함, 신앙 선배들의 헌신, 그리고 하나님의 크신 역사하심을 마음 깊이 간직하고 돌아갑니다.',
+    bible: 'İstanbul Havalimanı' },
 
   // 제11일
-  { day: 11, name: '✈️ 이스탄불 공항 출발 (귀국)', lat: 41.2753, lng: 28.7500,
+  { day: 11, name: '✈️ 이스탄불 공항 출발 (귀국)', lat: 41.2753, lng: 28.7510,
+    type: 'airport',
     desc: '제11일 (6/11 목)\n🕑 01:50 TK090 이스탄불 출발 → 인천\n\n✝️ 귀국 묵상\n11일간의 성지 순례를 마칩니다. 바울의 발자취를 따라 소아시아와 그리스를 순례하며 경험한 말씀의 생생함, 신앙 선배들의 헌신, 그리고 하나님의 크신 역사하심을 마음 깊이 간직하고 돌아갑니다.\n"내게 사는 것이 그리스도니 죽는 것도 유익함이라" (빌 1:21)',
     bible: 'İstanbul Havalimanı' },
   { day: 11, name: '🏠 인천국제공항 도착 — 귀국!', lat: 37.4692, lng: 126.4506,
+    type: 'airport',
     desc: '제11일 (6/11 목)\n🕔 17:40 인천국제공항 제1터미널 도착 및 해산\n수고하셨습니다! ✝️\n\n✝️ 귀국 감사\n충청지방회 24명이 함께한 2026년 성지 순례를 무사히 마치고 돌아왔습니다. 11일간 지켜주신 하나님의 은혜에 감사드리며, 이 순례의 경험이 각자의 신앙과 사역에 귀한 자산이 되기를 기도합니다.',
     bible: '인천국제공항 제1터미널' },
 ];
@@ -448,80 +463,83 @@ const hotels = [
 // ===== Google Forms 메모 링크 =====
 const MEMO_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeea6cQL4JMlwP_vTR4TXXa-a_Kv4l_hV6TkZAz4nvAytBX_g/viewform?usp=header';
 
-// ===== 라이트박스 =====
-function openLightbox(srcs, startIndex) {
-  let current = startIndex;
-  const total = srcs.length;
+// ===== 슬라이드 함수 (전역) =====
+window._sl = function(uid, dir, total) {
+  const g = window._galleries[uid];
+  if (!g) return;
+  g.current = (g.current + dir + total) % total;
+  const img = document.getElementById(uid+'_img');
+  const cnt = document.getElementById(uid+'_cnt');
+  if (img) img.src = g.srcs[g.current];
+  if (cnt) cnt.textContent = `${g.current+1} / ${total}`;
+};
 
-  const overlay = document.createElement('div');
-  overlay.style.cssText = `
+// ===== 라이트박스 (전역) =====
+window._lb = function(uid) {
+  const g = window._galleries[uid];
+  if (!g) return;
+  const srcs = g.srcs;
+  let cur = g.current;
+
+  // 기존 오버레이 제거
+  const old = document.getElementById('_lb_ov');
+  if (old) old.remove();
+
+  const ov = document.createElement('div');
+  ov.id = '_lb_ov';
+  ov.style.cssText = `
     position:fixed; top:0; left:0; width:100%; height:100%;
     background:rgba(0,0,0,0.93); z-index:99999;
     display:flex; align-items:center; justify-content:center;
-    flex-direction:column; touch-action:none;
+    flex-direction:column;
   `;
 
-  const render = () => {
-    overlay.innerHTML = `
-      <div style="position:relative; max-width:96vw; max-height:82vh; display:flex; align-items:center; justify-content:center;">
-        <img src="${srcs[current]}" style="
-          max-width:96vw; max-height:78vh;
+  const draw = () => {
+    ov.innerHTML = `
+      <div style="position:relative; max-width:96vw; max-height:80vh;
+        display:flex; align-items:center; justify-content:center;">
+        <img src="${srcs[cur]}" style="
+          max-width:96vw; max-height:76vh;
           object-fit:contain; border-radius:10px;
-          box-shadow:0 4px 24px rgba(0,0,0,0.5);"/>
-
-        ${total > 1 ? `
-        <button onclick="event.stopPropagation(); lbMove(-1)" style="
-          position:absolute; left:-16px; top:50%; transform:translateY(-50%);
+          box-shadow:0 4px 24px rgba(0,0,0,0.6);"/>
+        ${srcs.length > 1 ? `
+        <button id="_lb_prev" style="
+          position:absolute; left:-20px; top:50%; transform:translateY(-50%);
           background:rgba(255,255,255,0.2); color:white; border:none;
           border-radius:50%; width:44px; height:44px;
-          font-size:20px; cursor:pointer; backdrop-filter:blur(4px);">◀</button>
-        <button onclick="event.stopPropagation(); lbMove(1)" style="
-          position:absolute; right:-16px; top:50%; transform:translateY(-50%);
+          font-size:20px; cursor:pointer;">◀</button>
+        <button id="_lb_next" style="
+          position:absolute; right:-20px; top:50%; transform:translateY(-50%);
           background:rgba(255,255,255,0.2); color:white; border:none;
           border-radius:50%; width:44px; height:44px;
-          font-size:20px; cursor:pointer; backdrop-filter:blur(4px);">▶</button>
-        ` : ''}
+          font-size:20px; cursor:pointer;">▶</button>` : ''}
       </div>
-
-      <!-- 하단 정보 -->
-      <div style="margin-top:14px; display:flex; align-items:center; gap:16px;">
-        <span style="color:rgba(255,255,255,0.7); font-size:13px;">${current+1} / ${total}</span>
-        <button onclick="document.body.removeChild(document.getElementById('lb_overlay'))" style="
-          background:rgba(255,255,255,0.15); color:white; border:none;
-          border-radius:20px; padding:6px 16px; cursor:pointer; font-size:12px;">✕ 닫기</button>
+      <div style="margin-top:12px; display:flex; align-items:center; gap:14px;">
+        <span style="color:rgba(255,255,255,0.75); font-size:13px;">${cur+1} / ${srcs.length}</span>
+        <button id="_lb_close" style="
+          background:rgba(255,255,255,0.2); color:white; border:none;
+          border-radius:20px; padding:6px 18px; cursor:pointer; font-size:13px;">✕ 닫기</button>
       </div>
-
-      <!-- 썸네일 바 -->
-      ${total > 1 ? `
-      <div style="display:flex; gap:6px; margin-top:10px; overflow-x:auto; max-width:96vw; padding:4px;">
-        ${srcs.map((src, i) => `
-          <img src="${src}" onclick="event.stopPropagation(); lbJump(${i})" style="
-            width:52px; height:40px; object-fit:cover; border-radius:5px;
-            cursor:pointer; flex-shrink:0;
-            border:2px solid ${i===current ? '#fff' : 'rgba(255,255,255,0.3)'};
-            opacity:${i===current ? '1' : '0.6'};
-            transition:all 0.2s;"/>
-        `).join('')}
-      </div>` : ''}
     `;
-    overlay.id = 'lb_overlay';
+    // 버튼 이벤트
+    const prev = document.getElementById('_lb_prev');
+    const next = document.getElementById('_lb_next');
+    const close = document.getElementById('_lb_close');
+    if (prev) prev.onclick = (e) => { e.stopPropagation(); cur=(cur-1+srcs.length)%srcs.length; draw(); };
+    if (next) next.onclick = (e) => { e.stopPropagation(); cur=(cur+1)%srcs.length; draw(); };
+    if (close) close.onclick = (e) => { e.stopPropagation(); ov.remove(); };
   };
 
-  window.lbMove = (dir) => { current = (current + dir + total) % total; render(); };
-  window.lbJump = (i) => { current = i; render(); };
-
-  overlay.addEventListener('click', () => {
-    if (document.getElementById('lb_overlay')) document.body.removeChild(overlay);
-  });
-
-  document.body.appendChild(overlay);
-  render();
-}
+  ov.onclick = () => ov.remove();
+  document.body.appendChild(ov);
+  draw();
+};
 const allMarkers = [];
 const markerLayers = {};
 for (let d = 1; d <= 11; d++) markerLayers[d] = [];
 markerLayers['hotel'] = [];
 markerLayers['restaurant'] = [];
+markerLayers['airport'] = [];
 
 // 순례지 마커 생성
 places.forEach(p => {
@@ -531,27 +549,43 @@ places.forEach(p => {
   const placeName = encodeURIComponent(p.name.replace(/[①-⑳]/g, '').trim());
   const formLink = `${MEMO_FORM_URL}&entry.placeholder=${placeName}`;
 
-  // 대표 사진 HTML 생성 (썸네일 전체 표시 + 클릭하면 라이트박스)
+  // 대표 사진 HTML 생성 (슬라이드 방식 - 클릭으로 라이트박스)
   const BASE = 'https://raw.githubusercontent.com/PastorKim/pilgrimage-2026/main/';
   const photosHTML = p.photos && p.photos.length > 0
     ? (() => {
-        const id = `gallery_${Math.round(p.lat*10000)}`;
-        const srcsJson = JSON.stringify(p.photos.map(s => BASE+s));
+        const uid = `g${Math.abs(Math.round(p.lat*1000+p.lng*1000))}`;
+        const srcs = p.photos.map(s => BASE+s);
+        // 전역 갤러리 저장소에 등록
+        window._galleries = window._galleries || {};
+        window._galleries[uid] = { srcs, current: 0 };
         return `
-        <div style="display:flex; gap:5px; margin-top:10px; overflow-x:auto; padding-bottom:4px;">
-          ${p.photos.map((src, i) => `
-            <img src="${BASE}${src}"
-              style="
-                width:80px; height:65px; flex-shrink:0;
-                object-fit:cover; border-radius:7px;
-                border:2px solid #ddd; cursor:pointer;
-                transition:border-color 0.2s;
-              "
-              onmouseover="this.style.borderColor='#3d6b40'"
-              onmouseout="this.style.borderColor='#ddd'"
-              onclick="openLightbox(${srcsJson}, ${i})"
-              onerror="this.style.display='none'"/>
-          `).join('')}
+        <div style="margin-top:10px;">
+          <!-- 메인 사진 -->
+          <div style="position:relative; border-radius:8px; overflow:hidden; background:#f0f0f0;">
+            <img id="${uid}_img" src="${srcs[0]}"
+              style="width:100%; height:180px; object-fit:cover; display:block; cursor:zoom-in;"
+              onclick="window._lb('${uid}')"
+              onerror="this.src=''; this.style.background='#eee';"/>
+            ${srcs.length > 1 ? `
+            <!-- 좌우 버튼 -->
+            <button onclick="event.stopPropagation(); window._sl('${uid}',-1,${srcs.length})" style="
+              position:absolute; left:6px; top:50%; transform:translateY(-50%);
+              background:rgba(0,0,0,0.45); color:white; border:none;
+              border-radius:50%; width:32px; height:32px;
+              font-size:16px; cursor:pointer; line-height:1;">◀</button>
+            <button onclick="event.stopPropagation(); window._sl('${uid}',1,${srcs.length})" style="
+              position:absolute; right:6px; top:50%; transform:translateY(-50%);
+              background:rgba(0,0,0,0.45); color:white; border:none;
+              border-radius:50%; width:32px; height:32px;
+              font-size:16px; cursor:pointer; line-height:1;">▶</button>
+            <!-- 카운터 -->
+            <div id="${uid}_cnt" style="
+              position:absolute; bottom:6px; right:8px;
+              background:rgba(0,0,0,0.5); color:white;
+              border-radius:10px; padding:2px 8px; font-size:11px;">
+              1 / ${srcs.length}
+            </div>` : ''}
+          </div>
         </div>`;
       })()
     : `<div class="popup-photo-placeholder">📷 사진 준비 중<br>사진이 모이면 여기에 표시됩니다</div>`;
@@ -575,6 +609,7 @@ places.forEach(p => {
   allMarkers.push({ marker, day: p.day, type });
   markerLayers[p.day].push(marker);
   if (type === 'restaurant') markerLayers['restaurant'].push(marker);
+  if (type === 'airport') markerLayers['airport'].push(marker);
 });
 
 // 숙소 마커 생성
@@ -599,7 +634,32 @@ hotels.forEach(h => {
   markerLayers[h.day].push(marker); // 날짜별 필터에도 포함!
 });
 
-// ===== 날짜별 경로선 데이터 =====
+// ===== 공항 마커 데이터 =====
+const airports = [
+  { day: 10, name: '✈️ 이스탄불 공항 출발 (귀국)', lat: 41.2753, lng: 28.7500,
+    desc: '제10일 (6/10 수) 밤\n🕑 01:50 TK090 이스탄불 출발 → 인천\n💤 기내 숙박\n\n✝️ 귀국 묵상\n11일간의 성지 순례를 마칩니다. 바울의 발자취를 따라 소아시아와 그리스를 순례하며 경험한 말씀의 생생함, 신앙 선배들의 헌신, 그리고 하나님의 크신 역사하심을 마음 깊이 간직하고 돌아갑니다.' },
+];
+
+// 공항 마커 생성
+airports.forEach(a => {
+  const marker = L.marker([a.lat, a.lng], { icon: makeIcon(a.day, 'airport', a.name) });
+  const popupHTML = `
+    <div class="popup-day">✈️ 공항 · 제${a.day}일</div>
+    <div class="popup-name">${a.name}</div>
+    <div class="popup-desc">${a.desc}</div>
+    <a href="${MEMO_FORM_URL}" target="_blank" style="
+      display:block; margin-top:10px; padding:8px 12px;
+      background:#3d6b40; color:white; text-decoration:none;
+      border-radius:8px; font-size:12px; text-align:center;
+      font-weight:600;">
+      📝 메모 · 수정 건의하기
+    </a>
+  `;
+  marker.bindPopup(popupHTML, { maxWidth: 320 });
+  marker.addTo(map);
+  allMarkers.push({ marker, day: a.day, type: 'airport' });
+  markerLayers[a.day].push(marker);
+});
 const dayRoutes = {
   1: [
     [36.8330, 127.1665], // 천안 집결
@@ -680,7 +740,7 @@ const dayRoutes = {
     [41.0086, 28.9802],  // 성소피아
     [41.0174, 28.9840],  // 보스포러스
     [41.0107, 28.9681],  // 그랜드 바자르
-    [41.2753, 28.7500],  // 이스탄불 공항
+    [41.2753, 28.7500],  // 이스탄불 공항 출발 ✈️
   ],
   11: [
     [41.2753, 28.7500],  // 이스탄불 공항 출발
@@ -746,10 +806,13 @@ function filterDay(day) {
     return;
   }
 
-  // 날짜별 필터 — 순례지 + 해당 날짜 숙소 + 식당 모두 표시
+  // 날짜별 필터 — 순례지 + 해당 날짜 숙소 + 전날 숙소(출발지) 표시
   allMarkers.forEach(({ marker, day: mDay, type }) => {
     if (mDay === day) {
-      map.addLayer(marker); // 해당 날짜 마커 (숙소/식당 포함)
+      map.addLayer(marker);
+    } else if (type === 'hotel' && mDay === day - 1) {
+      // 전날 숙소 = 오늘의 출발지 → 함께 표시
+      map.addLayer(marker);
     } else {
       map.removeLayer(marker);
     }
