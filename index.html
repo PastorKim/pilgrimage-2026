@@ -325,21 +325,23 @@
       background:rgba(255,252,248,0.97); border-left:1px solid #d0c8bc;
       font-family:'Noto Sans KR',sans-serif;
       box-shadow:-4px 0 16px rgba(0,0,0,0.12);
-      display:none; flex-direction:column;
+      flex-direction:column;
     ">
       <!-- 고정 헤더 -->
       <div style="
-        flex-shrink:0; background:rgba(255,252,248,0.97);
+        flex-shrink:0; background:#3d6b40;
         padding:14px 16px; border-bottom:1px solid #e8e0d8;
         display:flex; justify-content:space-between; align-items:center;
       ">
-        <div style="font-size:15px; font-weight:700; color:#1a1a1a;">📖 순례 타임라인</div>
-        <button onclick="toggleTimeline()" style="background:none; border:none; font-size:18px; cursor:pointer; color:#888;">✕</button>
+        <div style="font-size:15px; font-weight:700; color:white;">📖 순례 타임라인</div>
+        <button onclick="toggleTimeline()" style="background:rgba(255,255,255,0.2); border:none; font-size:16px; cursor:pointer; color:white; border-radius:50%; width:28px; height:28px;">✕</button>
       </div>
-      <!-- 스크롤 영역 -->
+      <!-- 스크롤 영역 - 지도 확대 방지 -->
       <div id="timeline-content" style="
         flex:1; overflow-y:auto; padding:16px;
         scrollbar-width:thin; scrollbar-color:#c0b8b0 transparent;
+        overscroll-behavior:contain;
+        -webkit-overflow-scrolling:touch;
       "></div>
     </div>
 
@@ -497,24 +499,37 @@ const TIMELINE_DATA = [
 function toggleTimeline() {
   const panel = document.getElementById('timeline-panel');
   const isVisible = panel.style.display === 'flex';
-  if (isVisible) { panel.style.display = 'none'; return; }
+
+  if (isVisible) {
+    panel.style.display = 'none';
+    // 지도 스크롤 다시 활성화
+    map.scrollWheelZoom.enable();
+    map.touchZoom.enable();
+    return;
+  }
 
   const content = document.getElementById('timeline-content');
   content.innerHTML = TIMELINE_DATA.map(d => `
     <div style="margin-bottom:20px; cursor:pointer;"
-      onclick="filterDay(${d.day}); toggleTimeline();">
+      onclick="goToTimeline(${d.day})">
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-        <div style="width:32px; height:32px; border-radius:50%;
+        <div style="width:36px; height:36px; border-radius:50%;
           background:${d.color}; color:white; display:flex;
-          align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">${d.emoji}</div>
-        <div>
+          align-items:center; justify-content:center;
+          font-size:16px; flex-shrink:0; box-shadow:0 2px 6px ${d.color}66;">${d.emoji}</div>
+        <div style="flex:1;">
           <div style="font-size:13px; font-weight:700; color:#1a1a1a;">제${d.day}일 · ${d.date}</div>
-          <div style="font-size:12px; color:${d.color}; font-weight:600;">${d.title}</div>
+          <div style="font-size:12px; font-weight:600;" style="color:${d.color};">${d.title}</div>
         </div>
-        <div style="margin-left:auto; font-size:11px; color:#aaa;">지도 보기 →</div>
+        <div style="
+          font-size:10px; color:white; background:${d.color};
+          border-radius:12px; padding:3px 8px; white-space:nowrap;
+          flex-shrink:0;">지도 보기</div>
       </div>
-      <div style="margin-left:42px; border-left:2px solid ${d.color}44; padding-left:12px;">
-        ${d.items.map(item => `<div style="font-size:12px; color:#555; padding:3px 0;">· ${item}</div>`).join('')}
+      <div style="margin-left:46px; border-left:2px solid ${d.color}44; padding-left:12px;">
+        ${d.items.map(item => `
+          <div style="font-size:12px; color:#555; padding:3px 0; line-height:1.5;">· ${item}</div>
+        `).join('')}
       </div>
     </div>
     ${d.day < 11 ? `<div style="border-top:1px dashed #e8e0d8; margin:12px 0;"></div>` : ''}
@@ -522,6 +537,35 @@ function toggleTimeline() {
 
   panel.style.display = 'flex';
   document.getElementById('stats-panel').style.display = 'none';
+
+  // 타임라인 스크롤 시 지도 확대/축소 방지
+  map.scrollWheelZoom.disable();
+  map.touchZoom.disable();
+
+  // 터치 이벤트가 지도로 전파되지 않도록 차단
+  const tc = document.getElementById('timeline-content');
+  tc.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
+  tc.addEventListener('touchmove', e => e.stopPropagation(), { passive: true });
+  tc.addEventListener('wheel', e => e.stopPropagation(), { passive: true });
+}
+
+// 타임라인에서 날짜 클릭 시 날짜 필터 버튼도 활성화
+function goToTimeline(day) {
+  // 날짜 필터 적용
+  filterDay(day);
+
+  // 날짜 필터 버튼 활성화 표시
+  document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.day-btn').forEach(btn => {
+    if (btn.getAttribute('onclick') === `filterDay(${day})`) {
+      btn.classList.add('active');
+      // 버튼이 보이도록 스크롤
+      btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  });
+
+  // 타임라인 닫기
+  toggleTimeline();
 }
 
 // 5초 후 자동 접힘
@@ -1114,8 +1158,14 @@ const routeLine = L.polyline(allRouteCoords, {
 
 // ===== 날짜 필터 함수 =====
 function filterDay(day) {
-  document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
-  event.target.classList.add('active');
+  // 버튼 활성화 - event 없이도 동작
+  document.querySelectorAll('.day-btn').forEach(btn => {
+    btn.classList.remove('active');
+    const onclick = btn.getAttribute('onclick');
+    if (onclick === `filterDay('${day}')` || onclick === `filterDay(${day})`) {
+      btn.classList.add('active');
+    }
+  });
 
   // 모든 날짜별 경로선 숨기기
   Object.values(dayRouteLines).forEach(line => map.removeLayer(line));
