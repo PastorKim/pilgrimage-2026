@@ -234,6 +234,61 @@
     <button class="day-btn" onclick="filterDay('restaurant')">🍽️ 식당만</button>
   </div>
 
+  <!-- 오프라인 다운로드 버튼 -->
+  <div id="offline-btn" onclick="startOfflineDownload()" style="
+    position: absolute;
+    bottom: 30px;
+    left: 10px;
+    z-index: 999;
+    background: rgba(255,252,248,0.95);
+    border: 1px solid #d0c8bc;
+    border-radius: 10px;
+    padding: 8px 14px;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 12px;
+    color: #333;
+    user-select: none;
+    transition: all 0.2s;
+  ">
+    <span id="offline-icon">⬇️</span>
+    <span id="offline-text">지도 오프라인 저장</span>
+  </div>
+
+  <!-- 진행바 오버레이 -->
+  <div id="offline-overlay" style="
+    display: none;
+    position: absolute;
+    bottom: 80px;
+    left: 10px;
+    z-index: 999;
+    background: rgba(255,252,248,0.97);
+    border: 1px solid #d0c8bc;
+    border-radius: 12px;
+    padding: 16px 18px;
+    width: 240px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    font-family: 'Noto Sans KR', sans-serif;
+  ">
+    <div style="font-size:13px; font-weight:700; color:#1a1a1a; margin-bottom:8px;">
+      📥 지도 다운로드 중... (약 35MB)
+    </div>
+    <div style="background:#e8e0d8; border-radius:6px; height:10px; overflow:hidden; margin-bottom:8px;">
+      <div id="offline-progress-bar" style="
+        height:100%; width:0%; background:#3d6b40;
+        border-radius:6px; transition:width 0.3s;"></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; font-size:11px; color:#666;">
+      <span id="offline-progress-text">0%</span>
+      <span id="offline-progress-count">0 / 0</span>
+    </div>
+    <div id="offline-region-text" style="font-size:11px; color:#888; margin-top:4px;"></div>
+  </div>
+
   <!-- 지도 -->
   <div id="map"></div>
 
@@ -940,6 +995,125 @@ if ('serviceWorker' in navigator) {
       .then(reg => console.log('[SW] 등록 완료:', reg.scope))
       .catch(err => console.warn('[SW] 등록 실패:', err));
   });
+}
+
+// ===== 오프라인 지도 다운로드 =====
+function latLngToTile(lat, lng, zoom) {
+  const lr = lat * Math.PI / 180;
+  const x = Math.floor((lng + 180) / 360 * Math.pow(2, zoom));
+  const y = Math.floor((1 - Math.log(Math.tan(lr) + 1/Math.cos(lr)) / Math.PI) / 2 * Math.pow(2, zoom));
+  return { x, y };
+}
+
+function getTilesForRegion(lat1, lng1, lat2, lng2, zoom) {
+  const t1 = latLngToTile(lat2, lng1, zoom); // 좌상단
+  const t2 = latLngToTile(lat1, lng2, zoom); // 우하단
+  const tiles = [];
+  for (let x = t1.x; x <= t2.x; x++)
+    for (let y = t1.y; y <= t2.y; y++)
+      tiles.push({ x, y, z: zoom });
+  return tiles;
+}
+
+// 순례지 핵심 구역
+const REGIONS = [
+  { name: '🕌 갑바도기아', lat1:38.3, lng1:34.5, lat2:39.0, lng2:35.7 },
+  { name: '🙏 코냐·루스드라', lat1:37.5, lng1:31.0, lat2:38.5, lng2:33.0 },
+  { name: '⛪ 파묵칼레·에베소', lat1:37.7, lng1:27.0, lat2:38.6, lng2:29.5 },
+  { name: '⚓ 드로아·앗소', lat1:39.3, lng1:25.9, lat2:39.9, lng2:26.7 },
+  { name: '✝️ 빌립보·까발라', lat1:40.7, lng1:23.9, lat2:41.2, lng2:24.7 },
+  { name: '🏔️ 메테오라·베뢰아', lat1:39.5, lng1:21.4, lat2:40.7, lng2:22.5 },
+  { name: '🏛️ 고린도·아테네', lat1:37.7, lng1:22.7, lat2:38.1, lng2:24.1 },
+  { name: '🕌 이스탄불', lat1:40.8, lng1:28.5, lat2:41.4, lng2:29.3 },
+];
+const ZOOM_LEVELS = [5, 6, 7, 8, 9, 10, 11, 12];
+
+async function startOfflineDownload() {
+  const btn = document.getElementById('offline-btn');
+  const overlay = document.getElementById('offline-overlay');
+  const bar = document.getElementById('offline-progress-bar');
+  const pText = document.getElementById('offline-progress-text');
+  const pCount = document.getElementById('offline-progress-count');
+  const rText = document.getElementById('offline-region-text');
+
+  // 이미 완료된 경우
+  if (btn.dataset.done === 'true') return;
+
+  // 버튼 비활성화 & 진행바 표시
+  btn.style.opacity = '0.6';
+  btn.style.pointerEvents = 'none';
+  overlay.style.display = 'block';
+
+  // 전체 타일 목록 생성
+  const allTiles = [];
+  for (const region of REGIONS)
+    for (const zoom of ZOOM_LEVELS)
+      allTiles.push(...getTilesForRegion(region.lat1, region.lng1, region.lat2, region.lng2, zoom)
+        .map(t => ({ ...t, region: region.name })));
+
+  // 중복 제거
+  const uniqueMap = new Map();
+  allTiles.forEach(t => uniqueMap.set(`${t.z}/${t.x}/${t.y}`, t));
+  const tiles = Array.from(uniqueMap.values());
+  const total = tiles.length;
+
+  // 타일 URL 생성 (CARTO Voyager)
+  const subdomains = ['a','b','c','d'];
+  const tileUrl = (x, y, z) => {
+    const s = subdomains[(x + y) % 4];
+    return `https://${s}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${x}/${y}.png`;
+  };
+
+  // 캐시에 저장
+  const cache = await caches.open('pilgrimage-2026-v1');
+  let done = 0;
+  let failed = 0;
+
+  // 5개씩 병렬 다운로드
+  const BATCH = 5;
+  for (let i = 0; i < tiles.length; i += BATCH) {
+    const batch = tiles.slice(i, i + BATCH);
+    await Promise.all(batch.map(async t => {
+      const url = tileUrl(t.x, t.y, t.z);
+      try {
+        const resp = await fetch(url, { mode: 'cors' });
+        if (resp.ok) await cache.put(url, resp);
+      } catch { failed++; }
+      done++;
+    }));
+
+    // 진행 상황 업데이트
+    const pct = Math.round(done / total * 100);
+    bar.style.width = pct + '%';
+    pText.textContent = pct + '%';
+    pCount.textContent = `${done} / ${total}`;
+    rText.textContent = batch[0].region;
+    await new Promise(r => setTimeout(r, 10));
+  }
+
+  // 완료!
+  overlay.innerHTML = `
+    <div style="text-align:center; padding:4px 0;">
+      <div style="font-size:24px; margin-bottom:6px;">✅</div>
+      <div style="font-size:13px; font-weight:700; color:#3d6b40;">오프라인 저장 완료!</div>
+      <div style="font-size:11px; color:#888; margin-top:4px;">
+        ${done - failed}장 저장 완료
+        ${failed > 0 ? `(${failed}장 실패)` : ''}
+      </div>
+      <div style="font-size:11px; color:#aaa; margin-top:2px;">
+        이제 인터넷 없이도 지도를 볼 수 있어요
+      </div>
+    </div>
+  `;
+
+  // 3초 후 오버레이 닫기
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    btn.innerHTML = '<span>✅</span><span>오프라인 저장됨</span>';
+    btn.style.opacity = '1';
+    btn.style.borderColor = '#3d6b40';
+    btn.dataset.done = 'true';
+  }, 3000);
 }
 </script>
 </body>
