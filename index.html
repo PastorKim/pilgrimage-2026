@@ -72,7 +72,7 @@
   .day-btn.active { background: #3d6b40; color: white; border-color: #3d6b40; font-weight: 700; }
 
   /* 지도 컨테이너 */
-  #map { flex: 1; }
+  #map { flex: 1; position: relative; }
 
   /* 범례 */
   .legend {
@@ -234,106 +234,92 @@
     <button class="day-btn" onclick="filterDay('restaurant')">🍽️ 식당만</button>
   </div>
 
-  <!-- 오프라인 다운로드 버튼 -->
-  <div id="offline-btn" onclick="startOfflineDownload()" style="
-    position: absolute;
-    bottom: 30px;
-    left: 10px;
-    z-index: 999;
-    background: rgba(255,252,248,0.95);
-    border: 1px solid #d0c8bc;
-    border-radius: 10px;
-    padding: 8px 14px;
-    cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-family: 'Noto Sans KR', sans-serif;
-    font-size: 12px;
-    color: #333;
-    user-select: none;
-    transition: all 0.2s;
-  ">
-    <span id="offline-icon">⬇️</span>
-    <span id="offline-text">지도 오프라인 저장</span>
-  </div>
+  <!-- 지도 + 오버레이 요소들 -->
+  <div id="map" style="position:relative; flex:1;">
 
-  <!-- 진행바 오버레이 -->
-  <div id="offline-overlay" style="
-    display: none;
-    position: absolute;
-    bottom: 80px;
-    left: 10px;
-    z-index: 999;
-    background: rgba(255,252,248,0.97);
-    border: 1px solid #d0c8bc;
-    border-radius: 12px;
-    padding: 16px 18px;
-    width: 240px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-    font-family: 'Noto Sans KR', sans-serif;
-  ">
-    <div style="font-size:13px; font-weight:700; color:#1a1a1a; margin-bottom:8px;">
-      📥 지도 다운로드 중... (약 35MB)
+    <!-- 범례 -->
+    <div class="legend" id="legend">
+      <div class="legend-header" onclick="toggleLegend()">
+        <span class="legend-title">📍 날짜별 색상</span>
+        <button class="legend-toggle">▶</button>
+      </div>
+      <div class="legend-mini"></div>
+      <div class="legend-body">
+        <div class="legend-item"><div class="legend-dot" style="background:#ff4444"></div>1일 출발</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff8844"></div>2일 갑바도기아</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ffbb33"></div>3일 코냐</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#aadd00"></div>4일 파묵칼레</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#44cc44"></div>5일 에베소</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#00ccaa"></div>6일 드로아→그리스</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#00aaff"></div>7일 빌립보→메테오라</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#4477ff"></div>8일 고린도</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#7755ff"></div>9일 아테네</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#bb44ff"></div>10일 이스탄불</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff44aa"></div>11일 귀국</div>
+        <div class="legend-item"><div class="legend-hotel"></div>숙소</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#e07b39"></div>🍽️ 식당</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#5588cc"></div>✈️ 공항</div>
+      </div>
     </div>
-    <div style="background:#e8e0d8; border-radius:6px; height:10px; overflow:hidden; margin-bottom:8px;">
-      <div id="offline-progress-bar" style="
-        height:100%; width:0%; background:#3d6b40;
-        border-radius:6px; transition:width 0.3s;"></div>
+
+    <!-- 오프라인 다운로드 버튼 -->
+    <div id="offline-btn" onclick="startOfflineDownload()" style="
+      position: absolute;
+      bottom: 30px;
+      left: 10px;
+      z-index: 999;
+      background: rgba(255,252,248,0.95);
+      border: 1px solid #d0c8bc;
+      border-radius: 10px;
+      padding: 8px 14px;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 12px;
+      color: #333;
+      user-select: none;
+      transition: all 0.2s;
+    ">
+      <span id="offline-icon">⬇️</span>
+      <span id="offline-text">지도 오프라인 저장</span>
     </div>
-    <div style="display:flex; justify-content:space-between; font-size:11px; color:#666;">
-      <span id="offline-progress-text">0%</span>
-      <span id="offline-progress-count">0 / 0</span>
+
+    <!-- 진행바 오버레이 -->
+    <div id="offline-overlay" style="
+      display: none;
+      position: absolute;
+      bottom: 80px;
+      left: 10px;
+      z-index: 999;
+      background: rgba(255,252,248,0.97);
+      border: 1px solid #d0c8bc;
+      border-radius: 12px;
+      padding: 16px 18px;
+      width: 240px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      font-family: 'Noto Sans KR', sans-serif;
+    ">
+      <div style="font-size:13px; font-weight:700; color:#1a1a1a; margin-bottom:8px;">
+        📥 지도 다운로드 중... (약 35MB)
+      </div>
+      <div style="background:#e8e0d8; border-radius:6px; height:10px; overflow:hidden; margin-bottom:8px;">
+        <div id="offline-progress-bar" style="
+          height:100%; width:0%; background:#3d6b40;
+          border-radius:6px; transition:width 0.3s;"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:11px; color:#666;">
+        <span id="offline-progress-text">0%</span>
+        <span id="offline-progress-count">0 / 0</span>
+      </div>
+      <div id="offline-region-text" style="font-size:11px; color:#888; margin-top:4px;"></div>
     </div>
-    <div id="offline-region-text" style="font-size:11px; color:#888; margin-top:4px;"></div>
-  </div>
 
-  <!-- 지도 -->
-  <div id="map"></div>
+  </div><!-- /map -->
 
-</div>
-
-<!-- 범례 -->
-<div class="legend" id="legend">
-  <div class="legend-header" onclick="toggleLegend()">
-    <span class="legend-title">📍 날짜별 색상</span>
-    <button class="legend-toggle">▶</button>
-  </div>
-  <!-- 접혔을 때 미니 색상 점 표시 -->
-  <div class="legend-mini">
-    <div class="legend-mini-dot" style="background:#ff4444" title="1일 출발"></div>
-    <div class="legend-mini-dot" style="background:#ff8844" title="2일 갑바도기아"></div>
-    <div class="legend-mini-dot" style="background:#ffbb33" title="3일 코냐"></div>
-    <div class="legend-mini-dot" style="background:#aadd00" title="4일 파묵칼레"></div>
-    <div class="legend-mini-dot" style="background:#44cc44" title="5일 에베소"></div>
-    <div class="legend-mini-dot" style="background:#00ccaa" title="6일 드로아→그리스"></div>
-    <div class="legend-mini-dot" style="background:#00aaff" title="7일 빌립보→메테오라"></div>
-    <div class="legend-mini-dot" style="background:#4477ff" title="8일 고린도"></div>
-    <div class="legend-mini-dot" style="background:#7755ff" title="9일 아테네"></div>
-    <div class="legend-mini-dot" style="background:#bb44ff" title="10일 이스탄불"></div>
-    <div class="legend-mini-dot" style="background:#ff44aa" title="11일 귀국"></div>
-    <div class="legend-mini-dot" style="background:#e05599" title="숙소"></div>
-    <div class="legend-mini-dot" style="background:#e07b39" title="식당"></div>
-    <div class="legend-mini-dot" style="background:#5588cc" title="공항"></div>
-  </div>
-  <div class="legend-body">
-    <div class="legend-item"><div class="legend-dot" style="background:#ff4444"></div>1일 출발</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ff8844"></div>2일 갑바도기아</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ffbb33"></div>3일 코냐</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#aadd00"></div>4일 파묵칼레</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#44cc44"></div>5일 에베소</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#00ccaa"></div>6일 드로아→그리스</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#00aaff"></div>7일 빌립보→메테오라</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#4477ff"></div>8일 고린도</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#7755ff"></div>9일 아테네</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#bb44ff"></div>10일 이스탄불</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ff44aa"></div>11일 귀국</div>
-    <div class="legend-item"><div class="legend-hotel"></div>숙소</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#e07b39"></div>🍽️ 식당</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#5588cc"></div>✈️ 공항</div>
-  </div>
-</div>
+</div><!-- /app -->
 
 <script>
 // ===== 범례 토글 =====
