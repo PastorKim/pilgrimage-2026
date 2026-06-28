@@ -303,7 +303,7 @@
       font-family: 'Noto Sans KR', sans-serif;
     ">
       <div style="font-size:13px; font-weight:700; color:#1a1a1a; margin-bottom:8px;">
-        📥 지도 다운로드 중... (약 35MB)
+        📥 지도 다운로드 중... (약 120MB)
       </div>
       <div style="background:#e8e0d8; border-radius:6px; height:10px; overflow:hidden; margin-bottom:8px;">
         <div id="offline-progress-bar" style="
@@ -322,7 +322,40 @@
 </div><!-- /app -->
 
 <script>
-// ===== 범례 토글 =====
+// ===== 오프라인 버튼 상태 복원 =====
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('offline_saved');
+  const btn = document.getElementById('offline-btn');
+  if (saved === 'true' && btn) {
+    btn.innerHTML = '<span>✅</span><span>오프라인 저장됨</span>';
+    btn.style.borderColor = '#3d6b40';
+    btn.style.color = '#3d6b40';
+    btn.dataset.done = 'true';
+    btn.title = '길게 누르면 다시 저장';
+  }
+
+  // 꾹 누르면 재다운로드 허용
+  let pressTimer;
+  if (btn) {
+    btn.addEventListener('touchstart', () => {
+      pressTimer = setTimeout(() => {
+        if (btn.dataset.done === 'true') {
+          if (confirm('지도를 다시 다운로드할까요?')) {
+            localStorage.removeItem('offline_saved');
+            btn.dataset.done = 'false';
+            btn.innerHTML = '<span>⬇️</span><span>지도 오프라인 저장</span>';
+            btn.style.borderColor = '#d0c8bc';
+            btn.style.color = '#333';
+            btn.style.pointerEvents = 'auto';
+            btn.style.opacity = '1';
+          }
+        }
+      }, 800);
+    });
+    btn.addEventListener('touchend', () => clearTimeout(pressTimer));
+    btn.addEventListener('touchmove', () => clearTimeout(pressTimer));
+  }
+});
 function toggleLegend() {
   const legend = document.getElementById('legend');
   legend.classList.toggle('collapsed');
@@ -1012,7 +1045,7 @@ const REGIONS = [
   { name: '🏛️ 고린도·아테네', lat1:37.7, lng1:22.7, lat2:38.1, lng2:24.1 },
   { name: '🕌 이스탄불', lat1:40.8, lng1:28.5, lat2:41.4, lng2:29.3 },
 ];
-const ZOOM_LEVELS = [5, 6, 7, 8, 9, 10, 11, 12];
+const ZOOM_LEVELS = [5, 6, 7, 8, 9, 10, 11, 12, 13];
 
 async function startOfflineDownload() {
   const btn = document.getElementById('offline-btn');
@@ -1022,10 +1055,8 @@ async function startOfflineDownload() {
   const pCount = document.getElementById('offline-progress-count');
   const rText = document.getElementById('offline-region-text');
 
-  // 이미 완료된 경우
   if (btn.dataset.done === 'true') return;
 
-  // 버튼 비활성화 & 진행바 표시
   btn.style.opacity = '0.6';
   btn.style.pointerEvents = 'none';
   overlay.style.display = 'block';
@@ -1043,28 +1074,43 @@ async function startOfflineDownload() {
   const tiles = Array.from(uniqueMap.values());
   const total = tiles.length;
 
-  // 타일 URL 생성 (CARTO Voyager)
+  // 타일 URL
   const subdomains = ['a','b','c','d'];
   const tileUrl = (x, y, z) => {
     const s = subdomains[(x + y) % 4];
     return `https://${s}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${x}/${y}.png`;
   };
 
-  // 캐시에 저장
-  const cache = await caches.open('pilgrimage-2026-v2');
+  const cache = await caches.open('pilgrimage-2026-v3');
   let done = 0;
   let failed = 0;
+  const failedTiles = [];
 
-  // 5개씩 병렬 다운로드
-  const BATCH = 5;
+  // 재시도 포함 fetch 함수
+  async function fetchWithRetry(url, retries = 3, delay = 500) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const resp = await fetch(url, { mode: 'cors' });
+        if (resp.ok) return resp;
+      } catch {}
+      if (i < retries - 1) await new Promise(r => setTimeout(r, delay * (i + 1)));
+    }
+    return null;
+  }
+
+  // 2개씩 병렬 다운로드 (서버 부하 줄이기)
+  const BATCH = 2;
   for (let i = 0; i < tiles.length; i += BATCH) {
     const batch = tiles.slice(i, i + BATCH);
     await Promise.all(batch.map(async t => {
       const url = tileUrl(t.x, t.y, t.z);
-      try {
-        const resp = await fetch(url, { mode: 'cors' });
-        if (resp.ok) await cache.put(url, resp);
-      } catch { failed++; }
+      const resp = await fetchWithRetry(url);
+      if (resp) {
+        await cache.put(url, resp);
+      } else {
+        failed++;
+        failedTiles.push(t);
+      }
       done++;
     }));
 
@@ -1073,8 +1119,25 @@ async function startOfflineDownload() {
     bar.style.width = pct + '%';
     pText.textContent = pct + '%';
     pCount.textContent = `${done} / ${total}`;
-    rText.textContent = batch[0].region;
+    rText.textContent = `${batch[0].region} (줌 ${batch[0].z})`;
     await new Promise(r => setTimeout(r, 10));
+  }
+
+  // 실패한 타일 자동 재시도
+  if (failedTiles.length > 0) {
+    rText.textContent = `⏳ 실패 타일 재시도 중... (${failedTiles.length}장)`;
+    let retried = 0;
+    for (const t of failedTiles) {
+      const url = tileUrl(t.x, t.y, t.z);
+      const resp = await fetchWithRetry(url, 2, 1000);
+      if (resp) {
+        await cache.put(url, resp);
+        failed--;
+      }
+      retried++;
+      rText.textContent = `⏳ 재시도 중... ${retried}/${failedTiles.length}`;
+      await new Promise(r => setTimeout(r, 50));
+    }
   }
 
   // 완료!
@@ -1084,21 +1147,23 @@ async function startOfflineDownload() {
       <div style="font-size:13px; font-weight:700; color:#3d6b40;">오프라인 저장 완료!</div>
       <div style="font-size:11px; color:#888; margin-top:4px;">
         ${done - failed}장 저장 완료
-        ${failed > 0 ? `(${failed}장 실패)` : ''}
+        ${failed > 0 ? `(${failed}장 실패)` : '😊 완벽 저장!'}
       </div>
       <div style="font-size:11px; color:#aaa; margin-top:2px;">
-        이제 인터넷 없이도 지도를 볼 수 있어요
+        인터넷 없이도 거리 수준까지 보여요
       </div>
     </div>
   `;
 
-  // 3초 후 오버레이 닫기
   setTimeout(() => {
     overlay.style.display = 'none';
     btn.innerHTML = '<span>✅</span><span>오프라인 저장됨</span>';
     btn.style.opacity = '1';
     btn.style.borderColor = '#3d6b40';
+    btn.style.color = '#3d6b40';
     btn.dataset.done = 'true';
+    // 완료 상태 저장 (페이지 닫아도 유지)
+    localStorage.setItem('offline_saved', 'true');
   }, 3000);
 }
 </script>
