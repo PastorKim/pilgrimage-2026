@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pilgrimage-2026-v3';
+const CACHE_NAME = 'pilgrimage-2026-v4';
 
 // 오프라인에서도 작동할 핵심 파일들
 const CORE_ASSETS = [
