@@ -210,9 +210,41 @@
         <div class="header-sub">튀르키예 · 그리스 11일 (2026.6.1~6.11)</div>
       </div>
     </div>
-    <div style="color:rgba(255,255,255,0.8); font-size:12px; text-align:right;">
-      마커 클릭 시<br>상세 정보 표시
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button onclick="toggleSearch()" title="장소 검색" style="
+        background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.3);
+        color:white; border-radius:8px; padding:6px 10px; cursor:pointer;
+        font-size:15px; line-height:1;">🔍</button>
+      <button onclick="toggleStats()" title="순례 통계" style="
+        background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.3);
+        color:white; border-radius:8px; padding:6px 10px; cursor:pointer;
+        font-size:15px; line-height:1;">📊</button>
+      <button onclick="toggleTimeline()" title="순례 타임라인" style="
+        background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.3);
+        color:white; border-radius:8px; padding:6px 10px; cursor:pointer;
+        font-size:15px; line-height:1;">📖</button>
     </div>
+  </div>
+
+  <!-- 검색바 -->
+  <div id="search-bar" style="
+    display:none; background:#f7f4ef;
+    border-bottom:1px solid #ddd8cf;
+    padding:8px 16px; position:relative;
+  ">
+    <input id="search-input" type="text" placeholder="장소 검색... (예: 에베소, 빌립보)"
+      oninput="doSearch(this.value)"
+      style="width:100%; padding:8px 36px 8px 12px; border:1px solid #d0c8bc;
+        border-radius:20px; font-size:13px; font-family:'Noto Sans KR',sans-serif;
+        outline:none; background:white; box-sizing:border-box;"/>
+    <span onclick="clearSearch()" style="
+      position:absolute; right:28px; top:50%; transform:translateY(-50%);
+      cursor:pointer; color:#aaa; font-size:16px;">✕</span>
+    <div id="search-results" style="
+      display:none; position:absolute; top:100%; left:16px; right:16px;
+      background:white; border:1px solid #d0c8bc; border-radius:10px;
+      box-shadow:0 4px 16px rgba(0,0,0,0.12); z-index:1000;
+      max-height:260px; overflow-y:auto;"></div>
   </div>
 
   <!-- 날짜 필터 -->
@@ -236,6 +268,67 @@
 
   <!-- 지도 + 오버레이 요소들 -->
   <div id="map" style="position:relative; flex:1;">
+
+    <!-- 통계 카드 패널 -->
+    <div id="stats-panel" style="
+      display:none; position:absolute; top:10px; left:50%;
+      transform:translateX(-50%); z-index:1000;
+      background:rgba(255,252,248,0.97); border:1px solid #d0c8bc;
+      border-radius:14px; padding:18px 20px; width:320px; max-width:90vw;
+      box-shadow:0 6px 24px rgba(0,0,0,0.18);
+      font-family:'Noto Sans KR',sans-serif;
+    ">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <div style="font-size:15px; font-weight:700; color:#1a1a1a;">📊 순례 통계</div>
+        <button onclick="toggleStats()" style="background:none; border:none; font-size:18px; cursor:pointer; color:#888;">✕</button>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div style="background:#eef5ee; border-radius:10px; padding:12px; text-align:center;">
+          <div style="font-size:24px; font-weight:700; color:#3d6b40;">2</div>
+          <div style="font-size:11px; color:#666; margin-top:2px;">방문 국가</div>
+        </div>
+        <div style="background:#eef5ee; border-radius:10px; padding:12px; text-align:center;">
+          <div style="font-size:24px; font-weight:700; color:#3d6b40;">11</div>
+          <div style="font-size:11px; color:#666; margin-top:2px;">순례 일수</div>
+        </div>
+        <div style="background:#eef5ee; border-radius:10px; padding:12px; text-align:center;">
+          <div style="font-size:24px; font-weight:700; color:#3d6b40;">37</div>
+          <div style="font-size:11px; color:#666; margin-top:2px;">방문 장소</div>
+        </div>
+        <div style="background:#eef5ee; border-radius:10px; padding:12px; text-align:center;">
+          <div style="font-size:24px; font-weight:700; color:#3d6b40;">24</div>
+          <div style="font-size:11px; color:#666; margin-top:2px;">참가 인원</div>
+        </div>
+        <div style="background:#eef5ee; border-radius:10px; padding:12px; text-align:center;">
+          <div style="font-size:24px; font-weight:700; color:#3d6b40;">7</div>
+          <div style="font-size:11px; color:#666; margin-top:2px;">소아시아 교회</div>
+        </div>
+        <div style="background:#eef5ee; border-radius:10px; padding:12px; text-align:center;">
+          <div style="font-size:24px; font-weight:700; color:#3d6b40;">~4200</div>
+          <div style="font-size:11px; color:#666; margin-top:2px;">이동 거리 (km)</div>
+        </div>
+      </div>
+      <div style="margin-top:12px; padding:10px; background:#f5f0ea; border-radius:8px; font-size:12px; color:#555; text-align:center; line-height:1.6;">
+        ✝️ 바울의 발자취를 따라<br>소아시아와 그리스를 순례하다
+      </div>
+    </div>
+
+    <!-- 타임라인 패널 -->
+    <div id="timeline-panel" style="
+      display:none; position:absolute; top:0; right:0; bottom:0;
+      z-index:1000; width:300px; max-width:85vw;
+      background:rgba(255,252,248,0.97); border-left:1px solid #d0c8bc;
+      overflow-y:auto; font-family:'Noto Sans KR',sans-serif;
+      box-shadow:-4px 0 16px rgba(0,0,0,0.12);
+    ">
+      <div style="position:sticky; top:0; background:rgba(255,252,248,0.97);
+        padding:14px 16px; border-bottom:1px solid #e8e0d8; display:flex;
+        justify-content:space-between; align-items:center; z-index:1;">
+        <div style="font-size:15px; font-weight:700; color:#1a1a1a;">📖 순례 타임라인</div>
+        <button onclick="toggleTimeline()" style="background:none; border:none; font-size:18px; cursor:pointer; color:#888;">✕</button>
+      </div>
+      <div id="timeline-content" style="padding:16px;"></div>
+    </div>
 
     <!-- 범례 -->
     <div class="legend" id="legend">
@@ -298,6 +391,124 @@ window.addEventListener('load', () => {
 function toggleLegend() {
   const legend = document.getElementById('legend');
   legend.classList.toggle('collapsed');
+}
+
+// ===== 검색 기능 =====
+function toggleSearch() {
+  const bar = document.getElementById('search-bar');
+  const isVisible = bar.style.display !== 'none';
+  bar.style.display = isVisible ? 'none' : 'block';
+  if (!isVisible) setTimeout(() => document.getElementById('search-input').focus(), 100);
+}
+
+function doSearch(query) {
+  const results = document.getElementById('search-results');
+  if (!query.trim()) { results.style.display = 'none'; return; }
+  const q = query.toLowerCase();
+  const matches = places.filter(p =>
+    p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q)
+  ).slice(0, 8);
+
+  if (matches.length === 0) {
+    results.innerHTML = '<div style="padding:12px 16px; color:#888; font-size:13px;">검색 결과가 없어요</div>';
+    results.style.display = 'block';
+    return;
+  }
+  results.innerHTML = matches.map(p => `
+    <div onclick="goToPlace(${p.lat}, ${p.lng})" style="
+      padding:10px 16px; cursor:pointer; border-bottom:1px solid #f0ede8;
+      display:flex; align-items:center; gap:10px; font-size:13px;"
+      onmouseover="this.style.background='#f5f0ea'"
+      onmouseout="this.style.background='white'">
+      <div style="width:20px; height:20px; border-radius:50%;
+        background:${dayColors[p.day]||'#888'}; color:white;
+        display:flex; align-items:center; justify-content:center;
+        font-size:9px; font-weight:700; flex-shrink:0;">${p.day}</div>
+      <div>
+        <div style="font-weight:600; color:#1a1a1a;">${p.name.replace(/[①-⑳✈️🚌🏛️⛪🙏💧⛓️🏔️⚔️🌊🛂⚓🕌🛍️⛵🏠🗿🍽️🕳️🪦🎭📚🎪]/gu,'').trim()}</div>
+        <div style="font-size:11px; color:#888;">제${p.day}일 · ${['','6/1','6/2','6/3','6/4','6/5','6/6','6/7','6/8','6/9','6/10','6/11'][p.day]}</div>
+      </div>
+    </div>`).join('');
+  results.style.display = 'block';
+}
+
+function goToPlace(lat, lng) {
+  map.setView([lat, lng], 14);
+  document.getElementById('search-results').style.display = 'none';
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-bar').style.display = 'none';
+  allMarkers.forEach(({ marker }) => {
+    const p = marker.getLatLng();
+    if (Math.abs(p.lat - lat) < 0.001 && Math.abs(p.lng - lng) < 0.001) marker.openPopup();
+  });
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-results').style.display = 'none';
+}
+
+// ===== 통계 카드 =====
+function toggleStats() {
+  const p = document.getElementById('stats-panel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  document.getElementById('timeline-panel').style.display = 'none';
+}
+
+// ===== 타임라인 =====
+const TIMELINE_DATA = [
+  { day:1, date:'6/1 월', title:'출발', emoji:'✈️', color:'#ff4444',
+    items:['천안 단국대 집결 (16:00)','인천공항 출발 (23:20)','기내 숙박'] },
+  { day:2, date:'6/2 화', title:'갑바도기아', emoji:'🗿', color:'#ff8844',
+    items:['이스탄불 경유 (04:50)','카이세리 공항 도착 (07:55)','우치히사르 성채 조망','Altinocak 식당 항아리 케밥','갑바도기아 지프 투어','판자를륵 교회','괴뢰메 야외 박물관'] },
+  { day:3, date:'6/3 수', title:'코냐', emoji:'🕳️', color:'#ffbb33',
+    items:['데린쿠유 지하도시','루스드라 (바울 치유 현장)','이고니온/코냐'] },
+  { day:4, date:'6/4 목', title:'파묵칼레', emoji:'⛪', color:'#aadd00',
+    items:['비시디아 안디옥','라오디게아 교회','히에라폴리스 (빌립 순교지)'] },
+  { day:5, date:'6/5 금', title:'에베소', emoji:'📚', color:'#44cc44',
+    items:['빌라델비아 교회','사데 교회','사도 요한 무덤교회','에베소 고대도시','셀수스 도서관','원형극장'] },
+  { day:6, date:'6/6 토', title:'드로아→그리스', emoji:'⚓', color:'#00ccaa',
+    items:['드로아 항구 (유럽 선교 출발지)','앗소 고대도시','입살라 국경 통과','까발라 기념교회'] },
+  { day:7, date:'6/7 일', title:'빌립보→메테오라', emoji:'⛓️', color:'#00aaff',
+    items:['바울 감옥터','빌립보 유적','루디아 기념교회·세례터','데살로니카 경유','베뢰아 베마','메테오라 도착'] },
+  { day:8, date:'6/8 월', title:'고린도', emoji:'🏛️', color:'#4477ff',
+    items:['바를라암 수도원 (메테오라)','테르모필레 기념비','고린도 유적·비마 터'] },
+  { day:9, date:'6/9 화', title:'아테네→이스탄불', emoji:'🏺', color:'#7755ff',
+    items:['고린도 운하','아크로폴리스·파르테논','아레오바고 (바울 설교지)','신타그마 광장','아테네 출발 (22:00)'] },
+  { day:10, date:'6/10 수', title:'이스탄불', emoji:'🕌', color:'#bb44ff',
+    items:['히포드럼·오벨리스크','블루모스크 외관','성소피아 성당','보스포러스 유람','그랜드 바자르','이스탄불 출발 (01:50)'] },
+  { day:11, date:'6/11 목', title:'귀국', emoji:'🏠', color:'#ff44aa',
+    items:['인천국제공항 도착 (17:40)','해산 및 귀가'] },
+];
+
+function toggleTimeline() {
+  const panel = document.getElementById('timeline-panel');
+  const isVisible = panel.style.display !== 'none';
+  if (isVisible) { panel.style.display = 'none'; return; }
+
+  const content = document.getElementById('timeline-content');
+  content.innerHTML = TIMELINE_DATA.map(d => `
+    <div style="margin-bottom:20px; cursor:pointer;"
+      onclick="filterDay(${d.day}); toggleTimeline();">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+        <div style="width:32px; height:32px; border-radius:50%;
+          background:${d.color}; color:white; display:flex;
+          align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">${d.emoji}</div>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#1a1a1a;">제${d.day}일 · ${d.date}</div>
+          <div style="font-size:12px; color:${d.color}; font-weight:600;">${d.title}</div>
+        </div>
+        <div style="margin-left:auto; font-size:11px; color:#aaa;">지도 보기 →</div>
+      </div>
+      <div style="margin-left:42px; border-left:2px solid ${d.color}44; padding-left:12px;">
+        ${d.items.map(item => `<div style="font-size:12px; color:#555; padding:3px 0;">· ${item}</div>`).join('')}
+      </div>
+    </div>
+    ${d.day < 11 ? `<div style="border-top:1px dashed #e8e0d8; margin:12px 0;"></div>` : ''}
+  `).join('');
+
+  panel.style.display = 'block';
+  document.getElementById('stats-panel').style.display = 'none';
 }
 
 // 5초 후 자동 접힘
