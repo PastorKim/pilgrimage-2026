@@ -6,6 +6,15 @@
 <title>2026 충청지방회 성지순례 — 튀르키예·그리스</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+<!-- PWA 설정 -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3d6b40">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="성지순례">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
 
@@ -923,6 +932,14 @@ function filterDay(day) {
     const group = L.featureGroup(targets);
     map.fitBounds(group.getBounds().pad(0.3));
   }
+}
+// ===== Service Worker 등록 (오프라인 지원) =====
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/pilgrimage-2026/sw.js')
+      .then(reg => console.log('[SW] 등록 완료:', reg.scope))
+      .catch(err => console.warn('[SW] 등록 실패:', err));
+  });
 }
 </script>
 </body>

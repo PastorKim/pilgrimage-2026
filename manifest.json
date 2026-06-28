@@ -1,0 +1,26 @@
+{
+  "name": "2026 충청지방회 성지순례",
+  "short_name": "성지순례",
+  "description": "2026 충청지방회 튀르키예·그리스 성지순례 동선 지도",
+  "start_url": "/pilgrimage-2026/",
+  "scope": "/pilgrimage-2026/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#3d6b40",
+  "theme_color": "#3d6b40",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
